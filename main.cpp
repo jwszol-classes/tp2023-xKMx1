@@ -29,7 +29,7 @@ int main(){
     window.setFramerateLimit(60);
     while(window.isOpen()){
         sf::Event event;
-
+        //test
         while (window.pollEvent(event))
         {
             switch (event.type){
