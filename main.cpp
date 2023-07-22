@@ -2,6 +2,27 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 
+class Elevator {
+private:
+    int mPassengerMass;
+    int mCurrentLevel;
+    sf::RectangleShape mRectangle;
+public:
+    Elevator() {
+        sf::Vector2f sizeOfRectangle(100.0f, 100.0f);
+        mRectangle.setPosition(300.0f, 100.0f);
+        mRectangle.setOutlineColor(sf::Color::Black);
+        mRectangle.setSize(sizeOfRectangle);
+        mRectangle.setFillColor(sf::Color::White);
+        mRectangle.setOutlineThickness(10);
+        
+    }
+    sf::RectangleShape get_rectangle() {
+        return mRectangle;
+
+    }
+};
+
 class Passenger {
 private:
     int mStartLevel;
@@ -39,7 +60,8 @@ int main() {
     texture.setSmooth(true);
 
     Passenger first_passenger(&texture);
-
+    Elevator main_elevator;
+    
     window.setFramerateLimit(60);
     while (window.isOpen()) {
         sf::Event event;
@@ -55,6 +77,7 @@ int main() {
 
         window.clear(sf::Color(255, 255, 255));
         window.draw(first_passenger.getSprite());
+        window.draw(main_elevator.get_rectangle());
         window.display();
     }
     return 0;
