@@ -9,26 +9,28 @@ class Elevator {
 private:
     int mPassengerMass;
     int mCurrentLevel;
+    sf::Vector2f m_position;
     sf::RectangleShape mRectangle;
     sf::RectangleShape mLine;
     sf::RectangleShape mLine2;
+    sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 170.0f);
 
 public:
     Elevator() {
         //rectangle
-        sf::Vector2f sizeOfRectangle(300.0f, 200.0f);
-        mRectangle.setOrigin(sizeOfRectangle.x/2, sizeOfRectangle.y/2);
-        mRectangle.setPosition(WIDTH/2, HEIGHT/2);
+        mRectangle.setOrigin(m_sizeOfRectangle.x/2, m_sizeOfRectangle.y/2);
+        m_position = sf::Vector2f(WIDTH/2, HEIGHT/2);
+        mRectangle.setPosition(m_position);
         mRectangle.setOutlineColor(sf::Color::Black);
-        mRectangle.setSize(sizeOfRectangle);
+        mRectangle.setSize(m_sizeOfRectangle);
         mRectangle.setFillColor(sf::Color::White);
         mRectangle.setOutlineThickness(4.3f);
-        
+
         //lines next to elevator(walls)
         sf::Vector2f sizeOfLine(2000.0f, 5.0f);
         mLine.setSize(sizeOfLine);
         mLine.setOrigin(sizeOfLine.x/2, sizeOfLine.y/2);
-        mLine.setPosition(WIDTH/2 + sizeOfRectangle.x/2, 100.0f);
+        mLine.setPosition(WIDTH/2 + m_sizeOfRectangle.x/2, 100.0f);
         mLine.setOutlineColor(sf::Color::Black);
         mLine.setFillColor(sf::Color::Black);
         mLine.setOutlineThickness(2);
@@ -36,7 +38,7 @@ public:
 
         mLine2.setSize(sizeOfLine);
         mLine2.setOrigin(sizeOfLine.x/2, sizeOfLine.y/2);
-        mLine2.setPosition(WIDTH/2 - sizeOfRectangle.x/2, 100.0f);
+        mLine2.setPosition(WIDTH/2 - m_sizeOfRectangle.x/2, 100.0f);
         mLine2.setOutlineColor(sf::Color::Black);
         mLine2.setFillColor(sf::Color::Black);
         mLine2.setOutlineThickness(2);
@@ -50,6 +52,38 @@ public:
     }
     sf::RectangleShape get_line2() {
         return mLine2;
+    }
+    
+    void moveElevator(int floor){
+        switch(floor){
+            case 1:
+                if(m_position.y < (720 - m_sizeOfRectangle.y/2)){
+                    m_position.y += 5;
+                    mRectangle.setPosition(m_position);
+                    break;
+                }
+            case 2:
+                if(m_position.y > (720 - (3 / 2) * m_sizeOfRectangle.y)){
+                    m_position.y += 1;
+                    mRectangle.setPosition(m_position);
+                    break;
+                }
+            case 3:
+                if(m_position.y != 0){
+                    m_position.y += 5;
+                    mRectangle.setPosition(m_position);
+                }
+            case 4:
+                if(m_position.y != 0){
+                    m_position.y += 5;
+                    mRectangle.setPosition(m_position);
+                }
+            case 5:
+                if(m_position.y != 0){
+                    m_position.y += 5;
+                    mRectangle.setPosition(m_position);
+                }
+        }
     }
 };
 
@@ -114,6 +148,8 @@ int main() {
                 break;
             }
         }
+
+        main_elevator.moveElevator(1);
         
         window.clear(sf::Color(255, 255, 255));
         window.draw(first_passenger.getSprite());
