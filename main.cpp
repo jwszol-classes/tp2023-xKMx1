@@ -2,6 +2,9 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 
+#define WIDTH 1280
+#define HEIGHT 720
+
 class Elevator {
 private:
     int mPassengerMass;
@@ -10,38 +13,37 @@ private:
     sf::RectangleShape mLine;
     sf::RectangleShape mLine2;
 
-
 public:
     Elevator() {
         //rectangle
-        sf::Vector2f sizeOfRectangle(100.0f, 100.0f);
-        mRectangle.setPosition(300.0f, 100.0f);
+        sf::Vector2f sizeOfRectangle(300.0f, 200.0f);
+        mRectangle.setOrigin(sizeOfRectangle.x/2, sizeOfRectangle.y/2);
+        mRectangle.setPosition(WIDTH/2, HEIGHT/2);
         mRectangle.setOutlineColor(sf::Color::Black);
         mRectangle.setSize(sizeOfRectangle);
         mRectangle.setFillColor(sf::Color::White);
-        mRectangle.setOutlineThickness(10);
+        mRectangle.setOutlineThickness(4.3f);
+        
         //lines next to elevator(walls)
-        sf::Vector2f sizeOfLine(400.0f, 0.0f);
+        sf::Vector2f sizeOfLine(2000.0f, 5.0f);
         mLine.setSize(sizeOfLine);
-        mLine.setPosition(450.0f, 100.0f);
+        mLine.setOrigin(sizeOfLine.x/2, sizeOfLine.y/2);
+        mLine.setPosition(WIDTH/2 + sizeOfRectangle.x/2, 100.0f);
         mLine.setOutlineColor(sf::Color::Black);
         mLine.setFillColor(sf::Color::Black);
-        mLine.setOutlineThickness(10);
+        mLine.setOutlineThickness(2);
         mLine.rotate(90);
 
         mLine2.setSize(sizeOfLine);
-        mLine2.setPosition(250.0f, 100.0f);
+        mLine2.setOrigin(sizeOfLine.x/2, sizeOfLine.y/2);
+        mLine2.setPosition(WIDTH/2 - sizeOfRectangle.x/2, 100.0f);
         mLine2.setOutlineColor(sf::Color::Black);
         mLine2.setFillColor(sf::Color::Black);
-        mLine2.setOutlineThickness(10);
+        mLine2.setOutlineThickness(2);
         mLine2.rotate(90);
-        
-        
     }
     sf::RectangleShape get_rectangle() {
         return mRectangle;
-        
-
     }
     sf::RectangleShape get_line() {
         return mLine;
@@ -49,20 +51,23 @@ public:
     sf::RectangleShape get_line2() {
         return mLine2;
     }
-    
 };
+
+
 
 class Passenger {
 private:
     int mStartLevel;
     int mEndLevel;
     int mMass = 70;
+    sf::Vector2f m_position;
     sf::Sprite mSprite;
 public:
     Passenger(const sf::Texture* texture) {
+        m_position = sf::Vector2f(100.0f, 100.0f);
         mSprite.setTexture(*texture);
         mSprite.setScale(0.25f, 0.25f);
-        mSprite.setPosition(100.0f, 100.0f);
+        mSprite.setPosition(m_position);
     }
 
     int getStartLevel() {
@@ -76,10 +81,16 @@ public:
     sf::Sprite getSprite() {
         return mSprite;
     }
+
+    void move(){
+        m_position.x += 5;
+        mSprite.setPosition(m_position);
+    }
 };
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(1200, 700), "Elevator Simulation");
+    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Elevator Simulation");
+    sf::Clock frameClock;
 
     sf::Texture texture;
     if (!texture.loadFromFile("img/person_sprite.png"))
@@ -90,9 +101,6 @@ int main() {
 
     Passenger first_passenger(&texture);
     Elevator main_elevator;
-    
-
-
     
     window.setFramerateLimit(60);
     while (window.isOpen()) {
@@ -106,7 +114,7 @@ int main() {
                 break;
             }
         }
-
+        
         window.clear(sf::Color(255, 255, 255));
         window.draw(first_passenger.getSprite());
         window.draw(main_elevator.get_rectangle());
