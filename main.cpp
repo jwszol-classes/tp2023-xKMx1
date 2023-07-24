@@ -24,7 +24,7 @@ class Elevator {
 
     public:
         Elevator() {
-            //rectangle
+            //rectangle(elevator)
             m_rectangle.setOrigin(m_sizeOfRectangle.x/2, m_sizeOfRectangle.y/2);
             m_position = sf::Vector2f(fifthFloorCoordinates);
             m_rectangle.setPosition(m_position);
@@ -79,37 +79,50 @@ class Elevator {
         }
         
         void moveElevator(int floor){
+            this->checkCurrentLevel();
+
+            int increment;
+            if(floor > m_currentLevel) increment = -1;
+            else increment = 1;
+
             switch(floor){
                 case 0:
-                    if(!m_position.y < firstFloorCoordinates.y){
-                        m_position.y += 5;
+                    if(!(m_position.y == firstFloorCoordinates.y)){
+                        m_position.y += increment;
                         m_rectangle.setPosition(m_position);
                         break;
                     }
+                    else break;
                 case 1:
-                    if(m_position.y > (720 - (3 / 2) * m_sizeOfRectangle.y)){
-                        m_position.y += 1;
+                    if(!(m_position.y == secondFloorCoordinates.y)){
+                        m_position.y += increment;
                         m_rectangle.setPosition(m_position);
                         break;
                     }
+                    else break;
                 case 2:
-                    if(m_position.y != 0){
-                        m_position.y += 5;
+                    if(!(m_position.y == thirdFloorCoordinates.y)){
+                        m_position.y += increment;
                         m_rectangle.setPosition(m_position);
                         break;
                     }
+                    else break;
                 case 3:
-                    if(m_position.y != 0){
-                        m_position.y += 5;
+                    if(!(m_position.y == fourthFloorCoordinates.y)){
+                        m_position.y += increment;
                         m_rectangle.setPosition(m_position);
                         break;
                     }
+                    else break;
                 case 4:
-                    if(m_position.y != 0){
-                        m_position.y += 5;
+                    if(!(m_position.y == fifthFloorCoordinates.y)){
+                        m_position.y += increment;
                         m_rectangle.setPosition(m_position);
                         break;
                     }
+                    else break;
+                default:
+                    break;
             }
         }
 };
@@ -159,7 +172,7 @@ int main() {
 
     Elevator main_elevator;
     
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(120);
     while (window.isOpen()) {
         sf::Event event;
 
@@ -172,9 +185,8 @@ int main() {
             }
         }
 
-        main_elevator.moveElevator(1);
-        main_elevator.checkCurrentLevel();
-        std::cout << main_elevator.getCurrentLevel() << std::endl;
+        main_elevator.moveElevator(0);
+
         window.clear(sf::Color(255, 255, 255));
         window.draw(main_elevator.get_rectangle());
         window.draw(main_elevator.get_line());
