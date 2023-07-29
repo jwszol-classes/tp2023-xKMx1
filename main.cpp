@@ -120,58 +120,58 @@ class Elevator {
             m_rectangle.setFillColor(sf::Color::White);
             m_rectangle.setOutlineThickness(4.3f);
 
-            //lines next to elevator(walls)
-            sf::Vector2f m_sizeOfLine(2000.0f, 5.0f);
-            m_line.setSize(m_sizeOfLine);
-            m_line.setOrigin(m_sizeOfLine.x/2, m_sizeOfLine.y/2);
-            m_line.setPosition(SCREEN_WIDTH/2 + m_sizeOfRectangle.x/2, 100.0f);
-            m_line.setOutlineColor(sf::Color::Black);
-            m_line.setFillColor(sf::Color::Black);
-            m_line.setOutlineThickness(2);
-            m_line.rotate(90);
+        //lines next to elevator(walls)
+        sf::Vector2f m_sizeOfLine(2000.0f, 5.0f);
+        m_line.setSize(m_sizeOfLine);
+        m_line.setOrigin(m_sizeOfLine.x / 2, m_sizeOfLine.y / 2);
+        m_line.setPosition(SCREEN_WIDTH / 2 + m_sizeOfRectangle.x / 2, 100.0f);
+        m_line.setOutlineColor(sf::Color::Black);
+        m_line.setFillColor(sf::Color::Black);
+        m_line.setOutlineThickness(2);
+        m_line.rotate(90);
 
-            m_line2.setSize(m_sizeOfLine);
-            m_line2.setOrigin(m_sizeOfLine.x/2, m_sizeOfLine.y/2);
-            m_line2.setPosition(SCREEN_WIDTH/2 - m_sizeOfRectangle.x/2, 100.0f);
-            m_line2.setOutlineColor(sf::Color::Black);
-            m_line2.setFillColor(sf::Color::Black);
-            m_line2.setOutlineThickness(2);
-            m_line2.rotate(90);
+        m_line2.setSize(m_sizeOfLine);
+        m_line2.setOrigin(m_sizeOfLine.x / 2, m_sizeOfLine.y / 2);
+        m_line2.setPosition(SCREEN_WIDTH / 2 - m_sizeOfRectangle.x / 2, 100.0f);
+        m_line2.setOutlineColor(sf::Color::Black);
+        m_line2.setFillColor(sf::Color::Black);
+        m_line2.setOutlineThickness(2);
+        m_line2.rotate(90);
 
             m_currentLevel = 0;
             m_direction = 1;        // 1 for up, -1 for down
         }
 
-        sf::RectangleShape get_rectangle() {
-            return m_rectangle;
-        }
+    sf::RectangleShape get_rectangle() {
+        return m_rectangle;
+    }
 
-        sf::RectangleShape get_line() {
-            return m_line;
-        }
+    sf::RectangleShape get_line() {
+        return m_line;
+    }
 
-        sf::RectangleShape get_line2() {
-            return m_line2;
-        }
+    sf::RectangleShape get_line2() {
+        return m_line2;
+    }
 
-        int getCurrentLevel(){
-            return m_currentLevel;
-        }
+    int getCurrentLevel() {
+        return m_currentLevel;
+    }
 
-        void checkCurrentLevel(){
-            if(m_position.y < SCREEN_HEIGHT                            &&  m_position.y > SCREEN_HEIGHT - m_sizeOfRectangle.y)      m_currentLevel = 0;
-            if(m_position.y < SCREEN_HEIGHT - m_sizeOfRectangle.y      &&  m_position.y > SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y)  m_currentLevel = 1;
-            if(m_position.y < SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y  &&  m_position.y > SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y)  m_currentLevel = 2;
-            if(m_position.y < SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y  &&  m_position.y > SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y)  m_currentLevel = 3;
-            if(m_position.y < SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y  &&  m_position.y > SCREEN_HEIGHT - 5 * m_sizeOfRectangle.y)  m_currentLevel = 4;
-        }
-        
-        void moveElevator(int floor){
-            this->checkCurrentLevel();
+    void checkCurrentLevel() {
+        if (m_position.y < SCREEN_HEIGHT && m_position.y > SCREEN_HEIGHT - m_sizeOfRectangle.y)      m_currentLevel = 0;
+        if (m_position.y < SCREEN_HEIGHT - m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y)  m_currentLevel = 1;
+        if (m_position.y < SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y)  m_currentLevel = 2;
+        if (m_position.y < SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y)  m_currentLevel = 3;
+        if (m_position.y < SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 5 * m_sizeOfRectangle.y)  m_currentLevel = 4;
+    }
 
-            int increment;
-            if(floor > m_currentLevel) increment = -1;
-            else increment = 1;
+    void moveElevator(int floor) {
+        this->checkCurrentLevel();
+
+        int increment;
+        if (floor > m_currentLevel) increment = -1;
+        else increment = 1;
 
             switch(floor){
                 case 0:
@@ -218,6 +218,7 @@ class Elevator {
 
         }      
 };
+
 
 
 int main() {
