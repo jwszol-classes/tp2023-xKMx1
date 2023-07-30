@@ -46,8 +46,8 @@ class Button{
             target->draw(this->m_text);
         }
 
-        bool clicked(bool buttonPressed, sf::Vector2i mousePossition){
-            if(mousePossition.x <= m_shape.getPosition().x + m_shape.getSize().x && mousePossition.x >= m_shape.getPosition().x && mousePossition.y <= m_shape.getPosition().y + m_shape.getSize().y && mousePossition.y >= m_shape.getPosition().y && buttonPressed){
+        bool clicked(sf::Event evnt, sf::Vector2i mousePossition){
+            if(mousePossition.x <= m_shape.getPosition().x + m_shape.getSize().x && mousePossition.x >= m_shape.getPosition().x && mousePossition.y <= m_shape.getPosition().y + m_shape.getSize().y && mousePossition.y >= m_shape.getPosition().y && evnt.type == sf::Event::MouseButtonReleased){
                     return true;
             }
         }
@@ -88,11 +88,55 @@ class Passenger {
 
 class Floor{
     private:
-        std::vector<Passenger> queue;
-        int id;
+        std::vector<Passenger> m_queue;
+        std::vector<Button> m_otherFloorsButtons;
+        sf::RectangleShape m_shape;
+        int m_id;
+
     public:
+        Floor(int id, sf::Font* font){
+            m_id = id;
+
+            for(int i = 0; i < 5; i++){
+                if(m_id == i){
+                    continue;
+                }
+                Button button((100.f + (m_id % 2) * 900.f + i * 40), 50.f + static_cast<int>(m_id) * 125.f, 30.f, 30.f, font, i);
+                m_otherFloorsButtons.push_back(button);
+            }
+
+            
+            this->m_shape.setSize(sf::Vector2f(485.5f, 6.f));
+            this->m_shape.setFillColor(sf::Color::Green);
+
+            switch(m_id){
+                case 0:
+                    this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), firstFloorCoordinates.y + 70));
+                    break;
+                case 1:
+                    this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), secondFloorCoordinates.y + 70));
+                    break;
+                case 2:
+                    this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), thirdFloorCoordinates.y + 70));
+                    break;
+                case 3:
+                    this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), fourthFloorCoordinates.y + 70));
+                    break;
+                case 4:
+                    this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), fifthFloorCoordinates.y + 70));
+                    break;
+            }
+        }
+
         int getID(){
-            return id;
+            return m_id;
+        }
+
+        void render(sf::RenderTarget *target){
+            target->draw(this->m_shape);
+            for(int i = 0; i < 4; i++){
+                m_otherFloorsButtons[i].render(target);
+            }
         }
 };
 
@@ -113,7 +157,7 @@ class Elevator {
         Elevator() {
             //rectangle(elevator)
             m_rectangle.setOrigin(m_sizeOfRectangle.x/2, m_sizeOfRectangle.y/2);
-            m_position = sf::Vector2f(firstFloorCoordinates);
+            m_position = sf::Vector2f(fifthFloorCoordinates);
             m_rectangle.setPosition(m_position);
             m_rectangle.setOutlineColor(sf::Color::Black);
             m_rectangle.setSize(m_sizeOfRectangle);
@@ -159,11 +203,11 @@ class Elevator {
     }
 
     void checkCurrentLevel() {
-        if (m_position.y < SCREEN_HEIGHT && m_position.y > SCREEN_HEIGHT - m_sizeOfRectangle.y)      m_currentLevel = 0;
-        if (m_position.y < SCREEN_HEIGHT - m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y)  m_currentLevel = 1;
-        if (m_position.y < SCREEN_HEIGHT - 2 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y)  m_currentLevel = 2;
-        if (m_position.y < SCREEN_HEIGHT - 3 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y)  m_currentLevel = 3;
-        if (m_position.y < SCREEN_HEIGHT - 4 * m_sizeOfRectangle.y && m_position.y > SCREEN_HEIGHT - 5 * m_sizeOfRectangle.y)  m_currentLevel = 4;
+        if (m_position.y < firstFloorCoordinates.y && m_position.y > secondFloorCoordinates.y)      m_currentLevel = 0;
+        if (m_position.y < secondFloorCoordinates.y && m_position.y > thirdFloorCoordinates.y)  m_currentLevel = 1;
+        if (m_position.y < thirdFloorCoordinates.y && m_position.y > fourthFloorCoordinates.y)  m_currentLevel = 2;
+        if (m_position.y < fourthFloorCoordinates.y && m_position.y > fifthFloorCoordinates.y)  m_currentLevel = 3;
+        if (m_position.y < fifthFloorCoordinates.y && m_position.y > 0)  m_currentLevel = 4;
     }
 
     void moveElevator(int floor) {
@@ -173,53 +217,52 @@ class Elevator {
         if (floor > m_currentLevel) increment = -1;
         else increment = 1;
 
-            switch(floor){
-                case 0:
-                    if(!(m_position.y == firstFloorCoordinates.y)){
-                        m_position.y += increment;
-                        m_rectangle.setPosition(m_position);
-                        break;
-                    }
-                    else break;
-                case 1:
-                    if(!(m_position.y == secondFloorCoordinates.y)){
-                        m_position.y += increment;
-                        m_rectangle.setPosition(m_position);
-                        break;
-                    }
-                    else break;
-                case 2:
-                    if(!(m_position.y == thirdFloorCoordinates.y)){
-                        m_position.y += increment;
-                        m_rectangle.setPosition(m_position);
-                        break;
-                    }
-                    else break;
-                case 3:
-                    if(!(m_position.y == fourthFloorCoordinates.y)){
-                        m_position.y += increment;
-                        m_rectangle.setPosition(m_position);
-                        break;
-                    }
-                    else break;
-                case 4:
-                    if(!(m_position.y == fifthFloorCoordinates.y)){
-                        m_position.y += increment;
-                        m_rectangle.setPosition(m_position);
-                        break;
-                    }
-                    else break;
-                default:
+        switch(floor){
+            case 0:
+                if(!(m_position.y == firstFloorCoordinates.y)){
+                    m_position.y += increment;
+                    m_rectangle.setPosition(m_position);
                     break;
-            }
+                }
+                else break;
+            case 1:
+                if(!(m_position.y == secondFloorCoordinates.y)){
+                    std::cout << m_position.y << " | " << firstFloorCoordinates.y << '\n';
+                    m_position.y += increment;
+                    m_rectangle.setPosition(m_position);
+                    break;
+                }
+                else break;
+            case 2:
+                if(!(m_position.y == thirdFloorCoordinates.y)){
+                    m_position.y += increment;
+                    m_rectangle.setPosition(m_position);
+                    break;
+                }
+                else break;
+            case 3:
+                if(!(m_position.y == fourthFloorCoordinates.y)){
+                    m_position.y += increment;
+                    m_rectangle.setPosition(m_position);
+                    break;
+                }
+                else break;
+            case 4:
+                if(!(m_position.y == fifthFloorCoordinates.y)){
+                    m_position.y += increment;
+                    m_rectangle.setPosition(m_position);
+                    break;
+                }
+                else break;
+            default:
+                break;
         }
+    }
 
-        void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor, Floor fourthFloor, Floor fifthFloor){
+    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor, Floor fourthFloor, Floor fifthFloor){
 
-        }      
+    }      
 };
-
-
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
@@ -238,9 +281,12 @@ int main() {
 
     Elevator main_elevator;
 
-    std::string napis = "1";
-    Button przycisk(100.0f, 100.0f, 50.0f, 50.0f, &font, 1);
-    
+    std::vector<Floor> floors;
+    for(int i = 0; i < 5; i++){
+        Floor floor(i, &font);
+        floors.push_back(floor);
+    }
+
     window.setFramerateLimit(120);
     while (window.isOpen()) {
         sf::Event event;
@@ -254,14 +300,15 @@ int main() {
             }
         }
 
-        // main_elevator.moveElevator(0);
-        std::cout << przycisk.clicked(sf::Mouse::isButtonPressed(sf::Mouse::Button::Left), sf::Mouse::getPosition(window)) << '\n';
+        main_elevator.moveElevator(0);
 
         window.clear(sf::Color(255, 255, 255));
         window.draw(main_elevator.get_rectangle());
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
-        przycisk.render(&window);
+        for(int i = 0; i < 5; i++){
+            floors[i].render(&window);
+        }
 
         window.display();
     }
