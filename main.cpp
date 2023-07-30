@@ -11,40 +11,40 @@ const sf::Vector2f thirdFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN
 const sf::Vector2f fourthFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (7 * 70));
 const sf::Vector2f fifthFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
 
-class Button{
-    private:
-        sf::RectangleShape m_shape;
-        sf::Font* m_font;
-        sf::Text m_text;
-        sf::Vector2f m_textPositionVector;
-        unsigned int m_value;
+class Button {
+private:
+    sf::RectangleShape m_shape;
+    sf::Font* m_font;
+    sf::Text m_text;
+    sf::Vector2f m_textPositionVector;
+    unsigned int m_value;
 
-        sf::Color m_idleColor = sf::Color::Magenta;
-        sf::Color m_pushedColor = sf::Color::Cyan;
+    sf::Color m_idleColor = sf::Color::Magenta;
+    sf::Color m_pushedColor = sf::Color::Cyan;
 
-    public:
-        Button(float x, float y, float width, float height, sf::Font* font, int value = 0){
-            this->m_value = value;
+public:
+    Button(float x, float y, float width, float height, sf::Font* font, int value = 0) {
+        this->m_value = value;
 
-            this->m_shape.setSize(sf::Vector2f(width, height));
-            this->m_shape.setPosition(sf::Vector2f(x, y));
-            this->m_shape.setFillColor(m_idleColor);
+        this->m_shape.setSize(sf::Vector2f(width, height));
+        this->m_shape.setPosition(sf::Vector2f(x, y));
+        this->m_shape.setFillColor(m_idleColor);
 
-            this->m_text.setFont(*font);
-            this->m_text.setString(std::to_string(m_value));
-            this->m_text.setFillColor(sf::Color::Black);
-            this->m_text.setCharacterSize(25);
+        this->m_text.setFont(*font);
+        this->m_text.setString(std::to_string(m_value));
+        this->m_text.setFillColor(sf::Color::Black);
+        this->m_text.setCharacterSize(25);
 
-            m_textPositionVector = sf::Vector2f((m_shape.getGlobalBounds().getPosition().x) + (m_shape.getGlobalBounds().getSize().x / 2.f) - (m_text.getGlobalBounds().getSize().x / 2.f),
-                                                (m_shape.getGlobalBounds().getPosition().y) + (m_shape.getGlobalBounds().getSize().y / 2.f) - (m_text.getGlobalBounds().getSize().y));
+        m_textPositionVector = sf::Vector2f((m_shape.getGlobalBounds().getPosition().x) + (m_shape.getGlobalBounds().getSize().x / 2.f) - (m_text.getGlobalBounds().getSize().x / 2.f),
+            (m_shape.getGlobalBounds().getPosition().y) + (m_shape.getGlobalBounds().getSize().y / 2.f) - (m_text.getGlobalBounds().getSize().y));
 
-            this->m_text.setPosition(m_textPositionVector);
-        }
+        this->m_text.setPosition(m_textPositionVector);
+    }
 
-        void render(sf::RenderTarget *target){
-            target->draw(this->m_shape);
-            target->draw(this->m_text);
-        }
+    void render(sf::RenderTarget* target) {
+        target->draw(this->m_shape);
+        target->draw(this->m_text);
+    }
 
         bool clicked(sf::Event evnt, sf::Vector2i mousePossition){
             if(mousePossition.x <= m_shape.getPosition().x + m_shape.getSize().x && mousePossition.x >= m_shape.getPosition().x && mousePossition.y <= m_shape.getPosition().y + m_shape.getSize().y && mousePossition.y >= m_shape.getPosition().y && evnt.type == sf::Event::MouseButtonReleased){
@@ -54,36 +54,36 @@ class Button{
 };
 
 class Passenger {
-    private:
-        int mStartLevel;
-        int mEndLevel;
-        int mMass = 70;
-        sf::Vector2f m_position;
-        sf::Sprite mSprite;
-    public:
-        Passenger(const sf::Texture* texture) {
-            m_position = sf::Vector2f(100.0f, 100.0f);
-            mSprite.setTexture(*texture);
-            mSprite.setScale(0.25f, 0.25f);
-            mSprite.setPosition(m_position);
-        }
+private:
+    int mStartLevel;
+    int mEndLevel;
+    int mMass = 70;
+    sf::Vector2f m_position;
+    sf::Sprite mSprite;
+public:
+    Passenger(const sf::Texture* texture) {
+        m_position = sf::Vector2f(100.0f, 100.0f);
+        mSprite.setTexture(*texture);
+        mSprite.setScale(0.25f, 0.25f);
+        mSprite.setPosition(m_position);
+    }
 
-        int getStartLevel() {
-            return mStartLevel;
-        }
+    int getStartLevel() {
+        return mStartLevel;
+    }
 
-        int getEndLevel() {
-            return mEndLevel;
-        }
+    int getEndLevel() {
+        return mEndLevel;
+    }
 
-        sf::Sprite getSprite() {
-            return mSprite;
-        }
+    sf::Sprite getSprite() {
+        return mSprite;
+    }
 
-        void move(){
-            m_position.x += 5;
-            mSprite.setPosition(m_position);
-        }
+    void move() {
+        m_position.x += 5;
+        mSprite.setPosition(m_position);
+    }
 };
 
 class Floor{
@@ -141,17 +141,17 @@ class Floor{
 };
 
 class Elevator {
-    private:
-        int m_totalPassengerMass;
-        int m_currentLevel;
-        sf::Vector2f m_position;
-        sf::RectangleShape m_rectangle;
-        sf::RectangleShape m_line;
-        sf::RectangleShape m_line2;
-        sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
-        sf::Vector2f m_m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
-        std::vector<int> order;
-        int m_direction;
+private:
+    int m_totalPassengerMass;
+    int m_currentLevel;
+    sf::Vector2f m_position;
+    sf::RectangleShape m_rectangle;
+    sf::RectangleShape m_line;
+    sf::RectangleShape m_line2;
+    sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
+    sf::Vector2f m_m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
+    std::vector<int> order;
+    int m_direction;
 
     public:
         Elevator() {
@@ -182,9 +182,9 @@ class Elevator {
         m_line2.setOutlineThickness(2);
         m_line2.rotate(90);
 
-            m_currentLevel = 0;
-            m_direction = 1;        // 1 for up, -1 for down
-        }
+        m_currentLevel = 0;
+        m_direction = 1;        // 1 for up, -1 for down
+    }
 
     sf::RectangleShape get_rectangle() {
         return m_rectangle;
@@ -268,7 +268,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     sf::Font font;
-    if (!font.loadFromFile("font/Akira Expanded Demo.otf")){
+    if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
         std::cout << "Font error " << std::endl;
     }
 
@@ -280,6 +280,7 @@ int main() {
     texture.setSmooth(true);
 
     Elevator main_elevator;
+    std::vector<Floor> floors;
 
     std::vector<Floor> floors;
     for(int i = 0; i < 5; i++){
@@ -294,9 +295,9 @@ int main() {
         while (window.pollEvent(event))
         {
             switch (event.type) {
-                case sf::Event::Closed:
-                    window.close();
-                    break;
+            case sf::Event::Closed:
+                window.close();
+                break;
             }
         }
 
