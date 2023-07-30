@@ -11,6 +11,47 @@ const sf::Vector2f thirdFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN
 const sf::Vector2f fourthFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (7 * 70));
 const sf::Vector2f fifthFloorCoordinates = sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
 
+class Button {
+private:
+    sf::RectangleShape m_shape;
+    sf::Font* m_font;
+    sf::Text m_text;
+    sf::Vector2f m_textPositionVector;
+    unsigned int m_value;
+
+    sf::Color m_idleColor = sf::Color::Magenta;
+    sf::Color m_pushedColor = sf::Color::Cyan;
+
+public:
+    Button(float x, float y, float width, float height, sf::Font* font, int value = 0) {
+        this->m_value = value;
+
+        this->m_shape.setSize(sf::Vector2f(width, height));
+        this->m_shape.setPosition(sf::Vector2f(x, y));
+        this->m_shape.setFillColor(m_idleColor);
+
+        this->m_text.setFont(*font);
+        this->m_text.setString(std::to_string(m_value));
+        this->m_text.setFillColor(sf::Color::Black);
+        this->m_text.setCharacterSize(25);
+
+        m_textPositionVector = sf::Vector2f((m_shape.getGlobalBounds().getPosition().x) + (m_shape.getGlobalBounds().getSize().x / 2.f) - (m_text.getGlobalBounds().getSize().x / 2.f),
+            (m_shape.getGlobalBounds().getPosition().y) + (m_shape.getGlobalBounds().getSize().y / 2.f) - (m_text.getGlobalBounds().getSize().y));
+
+        this->m_text.setPosition(m_textPositionVector);
+    }
+
+    void render(sf::RenderTarget* target) {
+        target->draw(this->m_shape);
+        target->draw(this->m_text);
+    }
+
+    bool clicked(sf::Event evnt, sf::Vector2i mousePossition) {
+        if (mousePossition.x <= m_shape.getPosition().x + m_shape.getSize().x && mousePossition.x >= m_shape.getPosition().x && mousePossition.y <= m_shape.getPosition().y + m_shape.getSize().y && mousePossition.y >= m_shape.getPosition().y && evnt.type == sf::Event::MouseButtonReleased) {
+            return true;
+        }
+    }
+};
 
 class Passenger {
 private:
@@ -47,11 +88,38 @@ public:
 
 class Floor {
 private:
-    std::vector<Passenger> queue;
-    int id;
+    std::vector<Passenger> m_queue;
+    std::vector<Button> m_otherFloorsButtons;
+    sf::RectangleShape m_shape;
+    int m_id;
+
 public:
+    Floor(int id, sf::Font* font) {
+        m_id = id;
+
+        for (int i = 0; i < 5; i++) {
+            if (m_id == i) {
+                continue;
+            }
+            Button button((100.f + (m_id % 2) * 900.f + i * 40), 50.f + static_cast<int>(m_id) * 125.f, 30.f, 30.f, font, i);
+            m_otherFloorsButtons.push_back(button);
+        }
+
+
+        this->m_shape.setSize(sf::Vector2f(485.5f, 6.f));
+        this->m_shape.setPosition(sf::Vector2f(((m_id % 2) * 794.f), 150.f + static_cast<int>(m_id) * 141.7f));
+        this->m_shape.setFillColor(sf::Color::Green);
+    }
+
     int getID() {
-        return id;
+        return m_id;
+    }
+
+    void render(sf::RenderTarget* target) {
+        target->draw(this->m_shape);
+        for (int i = 0; i < 4; i++) {
+            m_otherFloorsButtons[i].render(target);
+        }
     }
 };
 
@@ -179,17 +247,29 @@ public:
 };
 
 
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
+
+    sf::Font font;
+    if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
+        std::cout << "Font error " << std::endl;
+    }
 
     sf::Texture texture;
     if (!texture.loadFromFile("img/person_sprite.png"))
     {
-        std::cout << "Error " << std::endl;
+        std::cout << "Texture error " << std::endl;
     }
     texture.setSmooth(true);
 
     Elevator main_elevator;
+    std::vector<Floor> floors;
+
+    for (int i = 0; i < 5; i++) {
+        Floor floor(i, &font);
+        floors.push_back(floor);
+    }
 
     window.setFramerateLimit(120);
     while (window.isOpen()) {
@@ -201,22 +281,16 @@ int main() {
             case sf::Event::Closed:
                 window.close();
                 break;
-            case sf::Event::MouseMoved:
-                std::cout << sf::Mouse::getPosition(window).x << " | " << sf::Mouse::getPosition(window).y << '\n';
-            case sf::Event::MouseButtonReleased:
-                if (sf::Mouse::getPosition(window).x < 100 && sf::Mouse::getPosition(window).x > 90 && sf::Mouse::getPosition(window).y < 100 && sf::Mouse::getPosition(window).y < 90) {
-                    std::cout << "dupa" << '\n';
-                }
-
             }
         }
-
-        // main_elevator.moveElevator(0);
 
         window.clear(sf::Color(255, 255, 255));
         window.draw(main_elevator.get_rectangle());
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
+        for (int i = 0; i < 5; i++) {
+            floors[i].render(&window);
+        }
 
         window.display();
     }
