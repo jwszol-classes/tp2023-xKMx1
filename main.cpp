@@ -52,7 +52,7 @@ public:
 
     unsigned int getValue() const { return m_value; }
 
-    bool clicked(sf::Event evnt, sf::Vector2i mousePosition) {
+    bool clicked(bool evnt, sf::Vector2i mousePosition) {
 //        std::cout << mousePosition.x << " | " << mousePosition.y << '\n';
 //        std::cout << m_shape.getPosition().x + m_shape.getSize().x << '\n';
 //        std::cout << m_shape.getPosition().x << '\n';
@@ -62,7 +62,8 @@ public:
         if (static_cast<float>(mousePosition.x) <= this->m_shape.getPosition().x + m_shape.getSize().x &&
             static_cast<float>(mousePosition.x) >= this->m_shape.getPosition().x &&
             static_cast<float>(mousePosition.y) <= this->m_shape.getPosition().y + m_shape.getSize().y &&
-            static_cast<float>(mousePosition.y) >= this->m_shape.getPosition().y) {
+            static_cast<float>(mousePosition.y) >= this->m_shape.getPosition().y &&
+            evnt) {
             std::cout << "123";
             return true;
         }
@@ -174,7 +175,7 @@ public:
 
     int getID() const { return m_id; }
 
-    void listenForButtons(sf::Event evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
+    void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
 //                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue());
@@ -343,6 +344,7 @@ int main() {
         floors.push_back(floor);
     }
 
+    bool buttonSwitch = 0;
     window.setFramerateLimit(120);
     while (window.isOpen()) {
         sf::Event event{};
@@ -352,12 +354,17 @@ int main() {
                 case sf::Event::Closed:
                     window.close();
                     break;
+                case sf::Event::MouseButtonReleased:
+                    if (event.mouseButton.button == sf::Mouse::Left) {
+                        buttonSwitch = 1;
+                    }
+                    break;
             }
         }
 
 //        main_elevator.moveElevator(0);
         for (int i = 0; i < 5; i++) {
-            floors[i].listenForButtons(event, sf::Mouse::getPosition(window), &texture);
+            floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
         }
 
         window.clear(sf::Color(255, 255, 255));
@@ -368,6 +375,7 @@ int main() {
             floors[i].render(&window);
         }
 
+        buttonSwitch = 0;
         window.display();
     }
     return 0;
