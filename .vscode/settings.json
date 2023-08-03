@@ -48,5 +48,14 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp"
-    }
+    },
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "prettier.tabWidth": 4,
+    "prettier.printWidth": 100,
+    "prettier.endOfLine": "crlf",
+    "prettier.useTabs": true,
+    "prettier.useEditorConfig": true,
+    "editor.formatOnSave": true,
+    "editor.indentSize": 4,
+    "C_Cpp.clang_format_fallbackStyle": "Visual Studi"
 }
