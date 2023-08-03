@@ -53,18 +53,11 @@ public:
     unsigned int getValue() const { return m_value; }
 
     bool clicked(bool evnt, sf::Vector2i mousePosition) {
-//        std::cout << mousePosition.x << " | " << mousePosition.y << '\n';
-//        std::cout << m_shape.getPosition().x + m_shape.getSize().x << '\n';
-//        std::cout << m_shape.getPosition().x << '\n';
-//        std::cout << m_shape.getPosition().y + m_shape.getSize().y << '\n';
-//        std::cout << m_shape.getPosition().y << '\n';
-
         if (static_cast<float>(mousePosition.x) <= this->m_shape.getPosition().x + m_shape.getSize().x &&
             static_cast<float>(mousePosition.x) >= this->m_shape.getPosition().x &&
             static_cast<float>(mousePosition.y) <= this->m_shape.getPosition().y + m_shape.getSize().y &&
             static_cast<float>(mousePosition.y) >= this->m_shape.getPosition().y &&
             evnt) {
-            std::cout << "123";
             return true;
         }
         return false;
@@ -81,38 +74,31 @@ private:
 
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel) {
-        m_startLevel = startLevel;
+        m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
         m_endLevel = endLevel;
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
 
         switch (startLevel) {
-            case 0:
-                this->m_sprite.setPosition(
-                        sf::Vector2f(300.f, static_cast<float>(firstFloorCoordinates.y + 70)));
-                break;
-            case 1:
-                this->m_sprite.setPosition(
-                        sf::Vector2f(500.f, static_cast<float>(secondFloorCoordinates.y + 70)));
-                break;
-            case 2:
-                this->m_sprite.setPosition(
-                        sf::Vector2f(300.f, static_cast<float>(thirdFloorCoordinates.y + 70)));
+            case 4:                                                                //TODO change this order
+                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(firstFloorCoordinates.y - 10)));
                 break;
             case 3:
-                this->m_sprite.setPosition(
-                        sf::Vector2f(500.f, static_cast<float>(fourthFloorCoordinates.y + 70)));
+                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(secondFloorCoordinates.y - 10)));
                 break;
-            case 4:
-                this->m_sprite.setPosition(
-                        sf::Vector2f(300.f, static_cast<float>(fifthFloorCoordinates.y + 70)));
+            case 2:
+                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(thirdFloorCoordinates.y - 10)));
+                break;
+            case 1:
+                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(fourthFloorCoordinates.y - 10)));
+                break;
+            case 0:
+                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(fifthFloorCoordinates.y - 10)));
                 break;
             default:
                 break;
         }
-        m_position = sf::Vector2f(100.0f, 100.0f);
-        m_sprite.setPosition(m_position);
     }
 
     int getStartLevel() const { return m_startLevel; }
@@ -178,8 +164,9 @@ public:
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-//                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue());
-//                m_queue.push_back(newPassenger);
+                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue());
+                std::cout << newPassenger.getStartLevel() << " | " << newPassenger.getEndLevel() << '\n';
+                m_queue.push_back(newPassenger);
             }
         }
     }
@@ -189,8 +176,9 @@ public:
         for (int i = 0; i < 4; i++) {
             m_otherFloorsButtons[i].render(target);
         }
-//        for (int i = 0; i < m_queue.size(); i++) {
-//        }
+        for (const auto &i: m_queue) {
+            target->draw(i.getSprite());
+        }
     }
 };
 
@@ -362,7 +350,7 @@ int main() {
             }
         }
 
-//        main_elevator.moveElevator(0);
+        main_elevator.moveElevator(0);
         for (int i = 0; i < 5; i++) {
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
         }
