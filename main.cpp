@@ -73,7 +73,7 @@ private:
     sf::Sprite m_sprite;
 
 public:
-    Passenger(const sf::Texture *texture, int startLevel, int endLevel) {
+    Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
         m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
         m_endLevel = endLevel;
 
@@ -81,20 +81,25 @@ public:
         m_sprite.setScale(0.25f, 0.25f);
 
         switch (startLevel) {
-            case 4:                                                                //TODO change this order
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(firstFloorCoordinates.y - 10)));
-                break;
-            case 3:
-                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(secondFloorCoordinates.y - 10)));
-                break;
-            case 2:
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(thirdFloorCoordinates.y - 10)));
+            case 0:
+                this->m_sprite.setPosition(
+                        sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(fifthFloorCoordinates.y - 10)));
                 break;
             case 1:
-                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(fourthFloorCoordinates.y - 10)));
+                this->m_sprite.setPosition(
+                        sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(fourthFloorCoordinates.y - 10)));
                 break;
-            case 0:
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(fifthFloorCoordinates.y - 10)));
+            case 2:
+                this->m_sprite.setPosition(
+                        sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(thirdFloorCoordinates.y - 10)));
+                break;
+            case 3:
+                this->m_sprite.setPosition(
+                        sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(secondFloorCoordinates.y - 10)));
+                break;
+            case 4:
+                this->m_sprite.setPosition(
+                        sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(firstFloorCoordinates.y - 10)));
                 break;
             default:
                 break;
@@ -115,8 +120,8 @@ public:
 
 class Floor {
 private:
-    std::vector<Passenger> m_queue;
-    std::vector<Button> m_otherFloorsButtons;
+    std::vector <Passenger> m_queue;
+    std::vector <Button> m_otherFloorsButtons;
     sf::RectangleShape m_shape;
     int m_id;
 
@@ -164,7 +169,7 @@ public:
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue());
+                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), m_queue.size());
                 std::cout << newPassenger.getStartLevel() << " | " << newPassenger.getEndLevel() << '\n';
                 m_queue.push_back(newPassenger);
             }
@@ -326,7 +331,7 @@ int main() {
 
     Elevator main_elevator;
 
-    std::vector<Floor> floors;
+    std::vector <Floor> floors;
     for (int i = 0; i < 5; i++) {
         Floor floor(i, &font);
         floors.push_back(floor);
