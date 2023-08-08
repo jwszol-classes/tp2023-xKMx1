@@ -106,15 +106,20 @@ public:
         }
     }
 
+    void render(sf::RenderTarget *target) {
+        target->draw(this->m_sprite);
+    }
+
     int getStartLevel() const { return m_startLevel; }
 
     int getEndLevel() const { return m_endLevel; }
 
     sf::Sprite getSprite() const { return m_sprite; }
 
-    void move() {
-        m_position.x += 5;
+    void move(sf::RenderTarget *target) {
+        m_position.x += 1;
         m_sprite.setPosition(m_position);
+        this->render(target);
     }
 };
 
@@ -170,7 +175,6 @@ public:
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
                 Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), m_queue.size());
-                std::cout << newPassenger.getStartLevel() << " | " << newPassenger.getEndLevel() << '\n';
                 m_queue.push_back(newPassenger);
             }
         }
@@ -185,6 +189,19 @@ public:
             target->draw(i.getSprite());
         }
     }
+
+    Passenger loadPassengerToElevator(const int &elevatorCurrentLevel, sf::RenderTarget *target) {
+        if (elevatorCurrentLevel == m_id && !m_queue.empty()) {
+            for (int i = 0; i < 10; i++) {
+                Sleep(100);
+                m_queue.back().move(target);
+            }
+            Passenger passenger = m_queue.back();                                     //TODO dont create new passenger but send it by reference i guess
+            m_queue.pop_back();
+
+            return passenger;
+        }
+    }
 };
 
 class Elevator {
@@ -197,7 +214,8 @@ private:
     sf::RectangleShape m_line2;
     sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
     sf::Vector2f m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
-    std::vector<int> order;
+    std::vector<int> m_order;
+    std::vector<int> m_passengers_list;
     int m_direction;
 
 public:
@@ -259,7 +277,6 @@ public:
 
     void moveElevator(int floor) {
         checkCurrentLevel();
-        std::cout << m_currentLevel;
 
         int increment;
         if (floor > m_currentLevel)
@@ -368,8 +385,10 @@ int main() {
 
         main_elevator.runElevator(floorQueue);
 
+
         for (int i = 0; i < 5; i++) {
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
+            floors[i].loadPassengerToElevator(main_elevator.getCurrentLevel(), &window);
         }
 
         window.clear(sf::Color(255, 255, 255));
