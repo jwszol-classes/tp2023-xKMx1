@@ -14,6 +14,15 @@ const sf::Vector2i thirdFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN
 const sf::Vector2i fourthFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
 
 class Button {
+private:
+    int m_value;
+    sf::RectangleShape m_shape;
+    sf::Text m_text;
+    sf::Vector2f m_textPositionVector;
+
+    sf::Color m_idleColor = sf::Color::Magenta;
+    sf::Color m_pushedColor = sf::Color::Cyan;
+
 public:
     Button(int x, int y, int width, int height, sf::Font *font, int value = 0) {
         this->m_value = value;
@@ -52,18 +61,16 @@ public:
     }
 
     int getValue() const { return m_value; }
-
-private:
-    int m_value;
-    sf::RectangleShape m_shape;
-    sf::Text m_text;
-    sf::Vector2f m_textPositionVector;
-
-    sf::Color m_idleColor = sf::Color::Magenta;
-    sf::Color m_pushedColor = sf::Color::Cyan;
 };
 
 class Passenger {
+private:
+    int m_startLevel;
+    int m_endLevel;
+    int m_mass = 70;
+    sf::Vector2f m_position;
+    sf::Sprite m_sprite;
+
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
         m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
@@ -110,15 +117,16 @@ public:
 
     sf::Sprite getSprite() const { return m_sprite; }
 
-private:
-    int m_startLevel;
-    int m_endLevel;
-    int m_mass = 70;
-    sf::Vector2f m_position;
-    sf::Sprite m_sprite;
+    int getMass() const { return m_mass; }
 };
 
 class Floor {
+private:
+    std::vector<Passenger> m_queue;
+    std::vector<Button> m_otherFloorsButtons;
+    sf::RectangleShape m_shape;
+    int m_id;
+
 public:
     Floor(int id, sf::Font *font) {
         m_id = id;
@@ -167,17 +175,14 @@ public:
         }
     }
 
-    Passenger loadPassengerToElevator(const int &elevatorCurrentLevel, sf::RenderTarget *target) {
-        if (elevatorCurrentLevel == m_id && !m_queue.empty()) {
-            for (int i = 0; i < 10; i++) {
-                Sleep(100);
-                m_queue.back().move(target);
-            }
-            Passenger passenger = m_queue.back();                                     //TODO dont create new passenger but send it by reference i guess
-            m_queue.pop_back();
+    Passenger sendPassengerToElevator() {
+        Passenger passenger = m_queue.back();
+        m_queue.pop_back();
 
-            return passenger;
-        }
+        return passenger;
+    }
+
+    [[maybe_unused]] void getRidOfPassenger(const Passenger &passenger) {
     }
 
     void render(sf::RenderTarget *target) {
@@ -189,15 +194,22 @@ public:
             target->draw(i.getSprite());
         }
     }
-
-private:
-    std::vector<Passenger> m_queue;
-    std::vector<Button> m_otherFloorsButtons;
-    sf::RectangleShape m_shape;
-    int m_id;
 };
 
 class Elevator {
+private:
+    int m_totalPassengerMass;
+    int m_currentLevel;
+    sf::Vector2f m_position;
+    sf::RectangleShape m_rectangle;
+    sf::RectangleShape m_line;
+    sf::RectangleShape m_line2;
+    sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
+    sf::Vector2f m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
+    std::vector<int> m_order;
+    std::vector<Passenger> m_passengers_list;
+    int m_direction;
+
 public:
     Elevator() {
         // rectangle(elevator)
@@ -308,6 +320,18 @@ public:
         }
     }
 
+    void acceptPassenger(const Passenger &passenger) {
+        m_passengers_list.push_back(passenger);
+        m_totalPassengerMass = passenger.getMass();
+    }
+
+    Passenger deliverPassneger() {
+        Passenger passenger = m_passengers_list.back();
+        m_passengers_list.pop_back();
+
+        return passenger;
+    }
+
     sf::RectangleShape get_rectangle() { return m_rectangle; }
 
     sf::RectangleShape get_line() { return m_line; }
@@ -318,19 +342,6 @@ public:
 
 //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
 //                       Floor fourthFloor, Floor fifthFloor) {}
-
-private:
-    int m_totalPassengerMass;
-    int m_currentLevel;
-    sf::Vector2f m_position;
-    sf::RectangleShape m_rectangle;
-    sf::RectangleShape m_line;
-    sf::RectangleShape m_line2;
-    sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
-    sf::Vector2f m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
-    std::vector<int> m_order;
-    std::vector<int> m_passengers_list;
-    int m_direction;
 };
 
 int main() {
