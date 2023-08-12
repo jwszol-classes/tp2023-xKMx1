@@ -6,18 +6,17 @@
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 
-const sf::Vector2i firstFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2,
-                                                        SCREEN_HEIGHT - 70); // coordinates relative to the middle of 300x170 elevator
-const sf::Vector2i secondFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (3 * 70));
-const sf::Vector2i thirdFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (5 * 70));
-const sf::Vector2i fourthFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (7 * 70));
-const sf::Vector2i fifthFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
+const sf::Vector2i zeroFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2,
+    SCREEN_HEIGHT - 70); // coordinates relative to the middle of 300x170 elevator
+const sf::Vector2i firstFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (3 * 70));
+const sf::Vector2i secondFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (5 * 70));
+const sf::Vector2i thirdFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (7 * 70));
+const sf::Vector2i fourthFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
 
 class Button {
 private:
-    unsigned int m_value;
+    int m_value;
     sf::RectangleShape m_shape;
-    sf::Font *m_font;
     sf::Text m_text;
     sf::Vector2f m_textPositionVector;
 
@@ -25,11 +24,11 @@ private:
     sf::Color m_pushedColor = sf::Color::Cyan;
 
 public:
-    Button(float x, float y, float width, float height, sf::Font *font, int value = 0) {
+    Button(int x, int y, int width, int height, sf::Font* font, int value = 0) {
         this->m_value = value;
 
-        this->m_shape.setSize(sf::Vector2f(width, height));
-        this->m_shape.setPosition(sf::Vector2f(x, y));
+        this->m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
+        this->m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
         this->m_shape.setFillColor(m_idleColor);
 
         this->m_text.setFont(*font);
@@ -38,19 +37,12 @@ public:
         this->m_text.setCharacterSize(25);
 
         m_textPositionVector = sf::Vector2f((m_shape.getGlobalBounds().getPosition().x) + (m_shape.getGlobalBounds().getSize().x / 2.f) -
-                                            (m_text.getGlobalBounds().getSize().x / 2.f),
-                                            (m_shape.getGlobalBounds().getPosition().y) + (m_shape.getGlobalBounds().getSize().y / 2.f) -
-                                            (m_text.getGlobalBounds().getSize().y));
+            (m_text.getGlobalBounds().getSize().x / 2.f),
+            (m_shape.getGlobalBounds().getPosition().y) + (m_shape.getGlobalBounds().getSize().y / 2.f) -
+            (m_text.getGlobalBounds().getSize().y));
 
         this->m_text.setPosition(m_textPositionVector);
     }
-
-    void render(sf::RenderTarget *target) {
-        target->draw(this->m_shape);
-        target->draw(this->m_text);
-    }
-
-    unsigned int getValue() const { return m_value; }
 
     bool clicked(bool evnt, sf::Vector2i mousePosition) {
         if (static_cast<float>(mousePosition.x) <= this->m_shape.getPosition().x + m_shape.getSize().x &&
@@ -62,55 +54,92 @@ public:
         }
         return false;
     }
+
+    void render(sf::RenderTarget* target) {
+        target->draw(this->m_shape);
+        target->draw(this->m_text);
+    }
+
+    int getValue() const { return m_value; }
 };
 
 class Passenger {
 private:
     int m_startLevel;
     int m_endLevel;
+    int m_orderNumber;
     int m_mass = 70;
     sf::Vector2f m_position;
     sf::Sprite m_sprite;
 
 public:
-    Passenger(const sf::Texture *texture, int startLevel, int endLevel) {
+    Passenger(const sf::Texture* texture, int startLevel, int endLevel, int orderNumber) {
         m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
         m_endLevel = endLevel;
+        m_orderNumber = orderNumber;
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
 
         switch (startLevel) {
-            case 4:                                                                //TODO change this order
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(firstFloorCoordinates.y - 10)));
-                break;
-            case 3:
-                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(secondFloorCoordinates.y - 10)));
-                break;
-            case 2:
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(thirdFloorCoordinates.y - 10)));
-                break;
-            case 1:
-                this->m_sprite.setPosition(sf::Vector2f(900.f, static_cast<float>(fourthFloorCoordinates.y - 10)));
-                break;
-            case 0:
-                this->m_sprite.setPosition(sf::Vector2f(300.f, static_cast<float>(fifthFloorCoordinates.y - 10)));
-                break;
-            default:
-                break;
+        case 0:
+            this->m_sprite.setPosition(
+                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(fourthFloorCoordinates.y - 10)));
+            break;
+        case 1:
+            this->m_sprite.setPosition(
+                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(thirdFloorCoordinates.y - 10)));
+            break;
+        case 2:
+            this->m_sprite.setPosition(
+                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(secondFloorCoordinates.y - 10)));
+            break;
+        case 3:
+            this->m_sprite.setPosition(
+                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(firstFloorCoordinates.y - 10)));
+            break;
+        case 4:
+            this->m_sprite.setPosition(
+                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(zeroFloorCoordinates.y - 10)));
+            break;
+        default:
+            break;
         }
     }
+
+    void setPos(sf::Vector2f pos) {
+        this->m_position = pos;
+
+        m_sprite.setPosition(m_position);
+    }
+
+    void move(int direction) {
+        switch (direction) {
+        case 1:
+            this->m_position.x += 1;
+            break;
+        case -1:
+            this->m_position.x -= 1;
+            break;
+        default:
+            break;
+        }
+        m_sprite.setPosition(m_position);
+    }
+
+    void render(sf::RenderTarget* target) {
+        target->draw(this->getSprite());
+    }
+
+    sf::Sprite getSprite() const { return m_sprite; }
 
     int getStartLevel() const { return m_startLevel; }
 
     int getEndLevel() const { return m_endLevel; }
 
-    sf::Sprite getSprite() const { return m_sprite; }
+    int getOrderNumber() const { return m_orderNumber; }
 
-    void move() {
-        m_position.x += 5;
-        m_sprite.setPosition(m_position);
-    }
+    int getMass() const { return m_mass; }
 };
 
 class Floor {
@@ -121,14 +150,14 @@ private:
     int m_id;
 
 public:
-    Floor(int id, sf::Font *font) {
+    Floor(int id, sf::Font* font) {
         m_id = id;
 
         for (int i = 0; i < 5; i++) {
             if (m_id == i) {
                 continue;
             }
-            Button button((100.f + (m_id % 2) * 900.f + i * 40), 50.f + static_cast<int>(m_id) * 125.f, 30.f, 30.f, font, i);
+            Button button((100 + (m_id % 2) * 900 + i * 40), 50 + m_id * 125, 30, 30, font, i);
             m_otherFloorsButtons.push_back(button);
         }
 
@@ -136,49 +165,71 @@ public:
         this->m_shape.setFillColor(sf::Color::Green);
 
         switch (m_id) {
-            case 0:
-                this->m_shape.setPosition(
-                        sf::Vector2f(((m_id % 2) * 794.f), firstFloorCoordinates.y + 70));
-                break;
-            case 1:
-                this->m_shape.setPosition(
-                        sf::Vector2f(((m_id % 2) * 794.f), secondFloorCoordinates.y + 70));
-                break;
-            case 2:
-                this->m_shape.setPosition(
-                        sf::Vector2f(((m_id % 2) * 794.f), thirdFloorCoordinates.y + 70));
-                break;
-            case 3:
-                this->m_shape.setPosition(
-                        sf::Vector2f(((m_id % 2) * 794.f), fourthFloorCoordinates.y + 70));
-                break;
-            case 4:
-                this->m_shape.setPosition(
-                        sf::Vector2f(((m_id % 2) * 794.f), fifthFloorCoordinates.y + 70));
-                break;
+        case 0:
+            this->m_shape.setPosition(
+                sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(zeroFloorCoordinates.y) + 70));
+            break;
+        case 1:
+            this->m_shape.setPosition(
+                sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(firstFloorCoordinates.y) + 70));
+            break;
+        case 2:
+            this->m_shape.setPosition(
+                sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(secondFloorCoordinates.y) + 70));
+            break;
+        case 3:
+            this->m_shape.setPosition(
+                sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(thirdFloorCoordinates.y) + 70));
+            break;
+        case 4:
+            this->m_shape.setPosition(
+                sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(fourthFloorCoordinates.y) + 70));
+            break;
         }
     }
 
-    int getID() const { return m_id; }
-
-    void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
+    void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture* texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue());
-                std::cout << newPassenger.getStartLevel() << " | " << newPassenger.getEndLevel() << '\n';
+                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
                 m_queue.push_back(newPassenger);
             }
         }
     }
 
-    void render(sf::RenderTarget *target) {
+    Passenger sendPassengerToElevator(sf::RenderTarget* target) {
+        Passenger passenger(m_queue.back().getSprite().getTexture(), m_queue.back().getStartLevel(), m_queue.back().getEndLevel(),
+            m_queue.back().getOrderNumber());
+        passenger.setPos(m_queue.back().getSprite().getPosition());
+        target->draw(passenger.getSprite());
+        m_queue.pop_back();
+
+        for (int i = 0; i < 200; i++) {
+            std::cout << passenger.getSprite().getPosition().x << '\n';
+            Sleep(5);
+            passenger.move(1);
+        }
+        return passenger;
+    }
+
+    [[maybe_unused]] void getRidOfPassenger(const Passenger& passenger) {
+    }
+
+    void render(sf::RenderTarget* target) {
         target->draw(this->m_shape);
         for (int i = 0; i < 4; i++) {
             m_otherFloorsButtons[i].render(target);
         }
-        for (const auto &i: m_queue) {
+        for (const auto& i : m_queue) {
             target->draw(i.getSprite());
         }
+    }
+
+    int getFloorValue() const { return m_id; }
+
+    bool isFloorEmpty() {
+        if (m_queue.empty()) return true;
+        else return false;
     }
 };
 
@@ -191,15 +242,16 @@ private:
     sf::RectangleShape m_line;
     sf::RectangleShape m_line2;
     sf::Vector2f m_sizeOfRectangle = sf::Vector2f(300.0f, 140.0f);
-    sf::Vector2f m_m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
-    std::vector<int> order;
+    sf::Vector2f m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
+    std::vector<int> m_order;
+    std::vector<Passenger> m_passengers_list;
     int m_direction;
 
 public:
     Elevator() {
         // rectangle(elevator)
         m_rectangle.setOrigin(m_sizeOfRectangle.x / 2, m_sizeOfRectangle.y / 2);
-        m_position = sf::Vector2f(fifthFloorCoordinates);
+        m_position = sf::Vector2f(fourthFloorCoordinates);
         m_rectangle.setPosition(m_position);
         m_rectangle.setOutlineColor(sf::Color::Black);
         m_rectangle.setSize(m_sizeOfRectangle);
@@ -207,10 +259,9 @@ public:
         m_rectangle.setOutlineThickness(4.3f);
 
         // lines next to elevator(walls)
-        sf::Vector2f m_sizeOfLine(2000.0f, 5.0f);
         m_line.setSize(m_sizeOfLine);
         m_line.setOrigin(m_sizeOfLine.x / 2, m_sizeOfLine.y / 2);
-        m_line.setPosition(SCREEN_WIDTH / 2 + m_sizeOfRectangle.x / 2, 100.0f);
+        m_line.setPosition(static_cast<float>(SCREEN_WIDTH) / 2 + m_sizeOfRectangle.x / 2, 100.0f);
         m_line.setOutlineColor(sf::Color::Black);
         m_line.setFillColor(sf::Color::Black);
         m_line.setOutlineThickness(2);
@@ -218,14 +269,109 @@ public:
 
         m_line2.setSize(m_sizeOfLine);
         m_line2.setOrigin(m_sizeOfLine.x / 2, m_sizeOfLine.y / 2);
-        m_line2.setPosition(SCREEN_WIDTH / 2 - m_sizeOfRectangle.x / 2, 100.0f);
+        m_line2.setPosition(static_cast<float>(SCREEN_WIDTH) / 2 - m_sizeOfRectangle.x / 2, 100.0f);
         m_line2.setOutlineColor(sf::Color::Black);
         m_line2.setFillColor(sf::Color::Black);
         m_line2.setOutlineThickness(2);
         m_line2.rotate(90);
 
         m_currentLevel = 0;
+        m_totalPassengerMass = 0;
         m_direction = 1; // 1 for up, -1 for down
+    }
+
+    void checkCurrentLevel() {
+        if (m_position.y < static_cast<float>(zeroFloorCoordinates.y) + 2.f &&
+            m_position.y > static_cast<float>(zeroFloorCoordinates.y) - 2.f)
+            m_currentLevel = 0;
+        else if (m_position.y <= static_cast<float>(firstFloorCoordinates.y) + 2.f &&
+            m_position.y > static_cast<float>(firstFloorCoordinates.y) - 2.f)
+            m_currentLevel = 1;
+        else if (m_position.y <= static_cast<float>(secondFloorCoordinates.y) + 2.f &&
+            m_position.y > static_cast<float>(secondFloorCoordinates.y) - 2.f)
+            m_currentLevel = 2;
+        else if (m_position.y <= static_cast<float>(thirdFloorCoordinates.y) + 2.f &&
+            m_position.y > static_cast<float>(thirdFloorCoordinates.y) - 2.f)
+            m_currentLevel = 3;
+        else if (m_position.y <= static_cast<float>(fourthFloorCoordinates.y) + 2.f &&
+            m_position.y > static_cast<float>(fourthFloorCoordinates.y) - 2.f)
+            m_currentLevel = 4;
+    }
+
+    void moveElevator(int floor) {
+        checkCurrentLevel();
+
+        float increment;
+        if (floor > m_currentLevel)
+            increment = -1.f;
+        else
+            increment = 1.f;
+
+        switch (floor) {
+        case 0:
+            if (m_position.y != static_cast<float>(zeroFloorCoordinates.y)) {
+                m_position.y += increment;
+                m_rectangle.setPosition(m_position);
+                break;
+            }
+            else
+                break;
+        case 1:
+            if (m_position.y != static_cast<float>(firstFloorCoordinates.y)) {
+                m_position.y += increment;
+                m_rectangle.setPosition(m_position);
+                break;
+            }
+            else
+                break;
+        case 2:
+            if (m_position.y != static_cast<float>(secondFloorCoordinates.y)) {
+                m_position.y += increment;
+                m_rectangle.setPosition(m_position);
+                break;
+            }
+            else
+                break;
+        case 3:
+            if (m_position.y != static_cast<float>(thirdFloorCoordinates.y)) {
+                m_position.y += increment;
+                m_rectangle.setPosition(m_position);
+                break;
+            }
+            else
+                break;
+        case 4:
+            if (m_position.y != static_cast<float>(fourthFloorCoordinates.y)) {
+                m_position.y += increment;
+                m_rectangle.setPosition(m_position);
+                break;
+            }
+            else
+                break;
+        default:
+            break;
+        }
+    }
+
+    void runElevator(std::vector<int>& queue) {
+        if (this->m_currentLevel != queue.back())
+            this->moveElevator(queue.back());
+        else {
+            Sleep(100);
+            queue.pop_back();
+        }
+    }
+
+    void acceptPassenger(const Passenger& passenger) {
+        m_passengers_list.push_back(passenger);
+        m_totalPassengerMass = passenger.getMass();
+    }
+
+    Passenger deliverPassneger() {
+        Passenger passenger = m_passengers_list.back();
+        m_passengers_list.pop_back();
+
+        return passenger;
     }
 
     sf::RectangleShape get_rectangle() { return m_rectangle; }
@@ -236,82 +382,22 @@ public:
 
     int getCurrentLevel() const { return m_currentLevel; }
 
-    void checkCurrentLevel() {
-        if (m_position.y < firstFloorCoordinates.y &&
-            m_position.y > secondFloorCoordinates.y)
-            m_currentLevel = 0;
-        if (m_position.y < secondFloorCoordinates.y &&
-            m_position.y > thirdFloorCoordinates.y)
-            m_currentLevel = 1;
-        if (m_position.y < thirdFloorCoordinates.y &&
-            m_position.y > fourthFloorCoordinates.y)
-            m_currentLevel = 2;
-        if (m_position.y < fourthFloorCoordinates.y &&
-            m_position.y > fifthFloorCoordinates.y)
-            m_currentLevel = 3;
-        if (m_position.y < fifthFloorCoordinates.y && m_position.y > 0)
-            m_currentLevel = 4;
-    }
-
-    void moveElevator(int floor) {
-        this->checkCurrentLevel();
-
-        int increment;
-        if (floor > m_currentLevel)
-            increment = -1;
-        else
-            increment = 1;
-
-        switch (floor) {
-            case 0:
-                if (!(m_position.y == firstFloorCoordinates.y)) {
-                    m_position.y += increment;
-                    m_rectangle.setPosition(m_position);
-                    break;
-                } else
-                    break;
-            case 1:
-                if (!(m_position.y == secondFloorCoordinates.y)) {
-                    std::cout << m_position.y << " | " << firstFloorCoordinates.y << '\n';
-                    m_position.y += increment;
-                    m_rectangle.setPosition(m_position);
-                    break;
-                } else
-                    break;
-            case 2:
-                if (!(m_position.y == thirdFloorCoordinates.y)) {
-                    m_position.y += increment;
-                    m_rectangle.setPosition(m_position);
-                    break;
-                } else
-                    break;
-            case 3:
-                if (!(m_position.y == fourthFloorCoordinates.y)) {
-                    m_position.y += increment;
-                    m_rectangle.setPosition(m_position);
-                    break;
-                } else
-                    break;
-            case 4:
-                if (!(m_position.y == fifthFloorCoordinates.y)) {
-                    m_position.y += increment;
-                    m_rectangle.setPosition(m_position);
-                    break;
-                } else
-                    break;
-            default:
-                break;
+    void render(sf::RenderTarget* target) {
+        target->draw(this->m_rectangle);
+        for (const auto& i : m_passengers_list) {
+            target->draw(i.getSprite());
         }
     }
 
-    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
-                       Floor fourthFloor, Floor fifthFloor) {}
+    //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
+    //                       Floor fourthFloor, Floor fifthFloor) {}
 };
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     std::vector<int> floorQueue;
+    floorQueue.push_back(2);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -332,38 +418,46 @@ int main() {
         floors.push_back(floor);
     }
 
-    bool buttonSwitch = 0;
+    bool buttonSwitch = false;
+
     window.setFramerateLimit(120);
     while (window.isOpen()) {
         sf::Event event{};
 
         while (window.pollEvent(event)) {
             switch (event.type) {
-                case sf::Event::Closed:
-                    window.close();
-                    break;
-                case sf::Event::MouseButtonReleased:
-                    if (event.mouseButton.button == sf::Mouse::Left) {
-                        buttonSwitch = 1;
-                    }
-                    break;
+            case sf::Event::Closed:
+                window.close();
+                break;
+            case sf::Event::MouseButtonReleased:
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    buttonSwitch = true;
+                }
+                break;
             }
         }
 
-        main_elevator.moveElevator(0);
+        main_elevator.runElevator(floorQueue);
+
+
         for (int i = 0; i < 5; i++) {
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
+            if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
+                main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
+            }
         }
 
         window.clear(sf::Color(255, 255, 255));
-        window.draw(main_elevator.get_rectangle());
+        //        window.draw(main_elevator.get_rectangle());
+        main_elevator.render(
+            &window);                                    //TODO dodaæ renderowanie ludzika pomiêdzy byciem na piêtrze a w windzie
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
         for (int i = 0; i < 5; i++) {
             floors[i].render(&window);
         }
 
-        buttonSwitch = 0;
+        buttonSwitch = false;
         window.display();
     }
     return 0;
