@@ -67,6 +67,7 @@ class Passenger {
 private:
     int m_startLevel;
     int m_endLevel;
+    int m_orderNumber;
     int m_mass = 70;
     sf::Vector2f m_position;
     sf::Sprite m_sprite;
@@ -75,6 +76,7 @@ public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
         m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
         m_endLevel = endLevel;
+        m_orderNumber = orderNumber;
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
@@ -105,17 +107,37 @@ public:
         }
     }
 
-    void move(sf::RenderTarget *target) {
-        m_position.x += 1;
+    void setPos(sf::Vector2f pos) {
+        this->m_position = pos;
+
         m_sprite.setPosition(m_position);
-        this->render(target);
+    }
+
+    void move(int direction) {
+        switch (direction) {
+            case 1:
+                this->m_position.x += 1;
+                break;
+            case -1:
+                this->m_position.x -= 1;
+                break;
+            default:
+                break;
+        }
+        m_sprite.setPosition(m_position);
     }
 
     void render(sf::RenderTarget *target) {
-        target->draw(this->m_sprite);
+        target->draw(this->getSprite());
     }
 
     sf::Sprite getSprite() const { return m_sprite; }
+
+    int getStartLevel() const { return m_startLevel; }
+
+    int getEndLevel() const { return m_endLevel; }
+
+    int getOrderNumber() const { return m_orderNumber; }
 
     int getMass() const { return m_mass; }
 };
@@ -175,10 +197,18 @@ public:
         }
     }
 
-    Passenger sendPassengerToElevator() {
-        Passenger passenger = m_queue.back();
+    Passenger sendPassengerToElevator(sf::RenderTarget *target) {
+        Passenger passenger(m_queue.back().getSprite().getTexture(), m_queue.back().getStartLevel(), m_queue.back().getEndLevel(),
+                            m_queue.back().getOrderNumber());
+        passenger.setPos(m_queue.back().getSprite().getPosition());
+        target->draw(passenger.getSprite());
         m_queue.pop_back();
 
+        for (int i = 0; i < 200; i++) {
+            std::cout << passenger.getSprite().getPosition().x << '\n';
+            Sleep(5);
+            passenger.move(1);
+        }
         return passenger;
     }
 
@@ -193,6 +223,13 @@ public:
         for (const auto &i: m_queue) {
             target->draw(i.getSprite());
         }
+    }
+
+    int getFloorValue() const { return m_id; }
+
+    bool isFloorEmpty() {
+        if (m_queue.empty()) return true;
+        else return false;
     }
 };
 
@@ -340,6 +377,13 @@ public:
 
     int getCurrentLevel() const { return m_currentLevel; }
 
+    void render(sf::RenderTarget *target) {
+        target->draw(this->m_rectangle);
+        for (const auto &i: m_passengers_list) {
+            target->draw(i.getSprite());
+        }
+    }
+
 //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
 //                       Floor fourthFloor, Floor fifthFloor) {}
 };
@@ -348,8 +392,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     std::vector<int> floorQueue;
-    floorQueue.push_back(3);
-    floorQueue.push_back(1);
+    floorQueue.push_back(2);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -371,6 +414,7 @@ int main() {
     }
 
     bool buttonSwitch = false;
+
     window.setFramerateLimit(120);
     while (window.isOpen()) {
         sf::Event event{};
@@ -393,11 +437,15 @@ int main() {
 
         for (int i = 0; i < 5; i++) {
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
-            floors[i].loadPassengerToElevator(main_elevator.getCurrentLevel(), &window);
+            if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
+                main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
+            }
         }
 
         window.clear(sf::Color(255, 255, 255));
-        window.draw(main_elevator.get_rectangle());
+//        window.draw(main_elevator.get_rectangle());
+        main_elevator.render(
+                &window);                                    //TODO dodać renderowanie ludzika pomiędzy byciem na piętrze a w windzie
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
         for (int i = 0; i < 5; i++) {
