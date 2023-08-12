@@ -384,8 +384,8 @@ public:
         }
     }
 
-//    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
-//                       Floor fourthFloor, Floor fifthFloor) {}
+    //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
+    //                       Floor fourthFloor, Floor fifthFloor) {}
 };
 
 int main() {
@@ -443,9 +443,9 @@ int main() {
         }
 
         window.clear(sf::Color(255, 255, 255));
-//        window.draw(main_elevator.get_rectangle());
+        //        window.draw(main_elevator.get_rectangle());
         main_elevator.render(
-                &window);                                    //TODO dodać renderowanie ludzika pomiędzy byciem na piętrze a w windzie
+                &window);                                    //TODO doda? renderowanie ludzika pomi?dzy byciem na pi?trze a w windzie
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
         for (int i = 0; i < 5; i++) {
