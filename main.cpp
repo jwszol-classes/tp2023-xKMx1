@@ -24,12 +24,15 @@ private:
     sf::Color m_pushedColor = sf::Color::Cyan;
 
 public:
-    Button(int x, int y, int width, int height, sf::Font* font, int value = 0) {
+    Button(int x, int y, int width, int height, sf::Font* font, int id, int value = 0) {
         this->m_value = value;
 
         this->m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
         this->m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
         this->m_shape.setFillColor(m_idleColor);
+        if (id == 3) {
+            this->m_shape.setFillColor(m_pushedColor);
+        }
 
         this->m_text.setFont(*font);
         this->m_text.setString(std::to_string(m_value));
@@ -84,11 +87,11 @@ public:
         switch (startLevel) {
         case 0:
             this->m_sprite.setPosition(
-                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(fourthFloorCoordinates.y - 10)));
+                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(zeroFloorCoordinates.y - 10)));
             break;
         case 1:
             this->m_sprite.setPosition(
-                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(thirdFloorCoordinates.y - 10)));
+                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(firstFloorCoordinates.y - 10)));
             break;
         case 2:
             this->m_sprite.setPosition(
@@ -96,11 +99,11 @@ public:
             break;
         case 3:
             this->m_sprite.setPosition(
-                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(firstFloorCoordinates.y - 10)));
+                sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(thirdFloorCoordinates.y - 10)));
             break;
         case 4:
             this->m_sprite.setPosition(
-                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(zeroFloorCoordinates.y - 10)));
+                sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(fourthFloorCoordinates.y - 10)));
             break;
         default:
             break;
@@ -140,6 +143,10 @@ public:
     int getOrderNumber() const { return m_orderNumber; }
 
     int getMass() const { return m_mass; }
+
+    sf::Vector2f getPosition() {
+        return m_position;
+    }
 };
 
 class Floor {
@@ -157,7 +164,7 @@ public:
             if (m_id == i) {
                 continue;
             }
-            Button button((100 + (m_id % 2) * 900 + i * 40), 50 + m_id * 125, 30, 30, font, i);
+            Button button((100 + (m_id % 2) * 900 + i * 40), SCREEN_HEIGHT - m_id * 140 - 90, 30, 30, font, m_id, i);
             m_otherFloorsButtons.push_back(button);
         }
 
@@ -180,6 +187,7 @@ public:
         case 3:
             this->m_shape.setPosition(
                 sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(thirdFloorCoordinates.y) + 70));
+            this->m_shape.setFillColor(sf::Color::Black);
             break;
         case 4:
             this->m_shape.setPosition(
@@ -191,6 +199,7 @@ public:
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture* texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
+                std::cout << "ID " << m_id << "\n";
                 Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
                 m_queue.push_back(newPassenger);
             }
@@ -204,11 +213,6 @@ public:
         target->draw(passenger.getSprite());
         m_queue.pop_back();
 
-        for (int i = 0; i < 200; i++) {
-            std::cout << passenger.getSprite().getPosition().x << '\n';
-            Sleep(5);
-            passenger.move(1);
-        }
         return passenger;
     }
 
@@ -228,8 +232,12 @@ public:
     int getFloorValue() const { return m_id; }
 
     bool isFloorEmpty() {
-        if (m_queue.empty()) return true;
+        if (this->m_queue.empty()) return true;
         else return false;
+    }
+
+    sf::RectangleShape getShape() {
+        return m_shape;
     }
 };
 
@@ -354,6 +362,18 @@ public:
     }
 
     void runElevator(std::vector<int>& queue) {
+        if (!m_passengers_list.empty()) {
+            if (m_passengers_list.back().getPosition().x != 600) {
+                std::cout << m_passengers_list.back().getPosition().x << '\n';
+                if (m_passengers_list.back().getStartLevel() % 2 == 1) {
+                    m_passengers_list.back().move(-1);
+                }
+                else {
+                    m_passengers_list.back().move(1);
+                }
+            }
+        }
+
         if (this->m_currentLevel != queue.back())
             this->moveElevator(queue.back());
         else {
@@ -397,7 +417,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     std::vector<int> floorQueue;
-    floorQueue.push_back(2);
+    floorQueue.push_back(3);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -419,6 +439,7 @@ int main() {
     }
 
     bool buttonSwitch = false;
+    bool passengerMoving = false;
 
     window.setFramerateLimit(120);
     while (window.isOpen()) {
@@ -442,15 +463,20 @@ int main() {
 
         for (int i = 0; i < 5; i++) {
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
+            //            std::cout << main_elevator.getCurrentLevel() << " | " << floors[i].getFloorValue() << " | "
+            //                      << floors[i].getShape().getPosition().y << " | "
+            //                      << !floors[i].isFloorEmpty()
+            //                      << "\n";
             if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
+                std::cout << "A\n";
                 main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
         }
 
+
         window.clear(sf::Color(255, 255, 255));
         //        window.draw(main_elevator.get_rectangle());
-        main_elevator.render(
-            &window);                                    //TODO dodaæ renderowanie ludzika pomiêdzy byciem na piêtrze a w windzie
+        main_elevator.render(&window);
         window.draw(main_elevator.get_line());
         window.draw(main_elevator.get_line2());
         for (int i = 0; i < 5; i++) {
