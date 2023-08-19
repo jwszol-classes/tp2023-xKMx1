@@ -19,7 +19,7 @@ struct Seat {
 };
 
 // TODO do zmiany wymiary windy i te wartosci
-const Seat Seats[8] = {490, false, 518.75, false, 565, false, 602.5, false, 640, false, 677.5, false, 715, false, 720, false};
+
 
 class Button {
 private:
@@ -82,7 +82,7 @@ private:
     int m_mass = 70;
     sf::Vector2f m_position;
     sf::Sprite m_sprite;
-    bool m_flag = false;
+    int spot;
 
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
@@ -92,6 +92,7 @@ public:
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
+        spot = -1;
 
         switch (startLevel) {
             case 0:
@@ -119,12 +120,12 @@ public:
         }
     }
 
-    void setFlag(bool x) {
-        m_flag = x;
+    bool getSpot() const {
+        return spot;
     }
 
-    bool getFlag() const {
-        return m_flag;
+    void setSpot(int x) {
+        spot = x;
     }
 
     void setPos(sf::Vector2f pos) {
@@ -286,6 +287,7 @@ private:
     std::vector<Passenger> m_passengers_list;
     bool m_isFrozen;
     int m_direction;
+    Seat Seats[8] = {490, false, 518.75, false, 565, false, 602.5, false, 640, false, 677.5, false, 715, false, 720, false};
 
 public:
     Elevator() {
@@ -392,26 +394,30 @@ public:
     }
 
     void runElevator(std::vector<int> &queue) {
-        float distance = 720.;
-        float counter = 0.;
-
         if (!m_passengers_list.empty()) {
             for (auto &i: m_passengers_list) {
-                for (Seat Seat: Seats) {
-                    if (!(i.getPosition().x >= Seat.position - 2 && i.getPosition().x <= Seat.position + 2) && !Seat.taken) {
-                        i.setFlag(true);
-                    } else {
-                        Seat.taken = true;
-                        i.setFlag(false);
+                bool flag = false;
+                for (int j = 0; j < 8; j++)
+                    if (i.getSpot() == j) {
+                        flag = false;
+                    } else if ((i.getPosition().x >= Seats[j].position - 2 && i.getPosition().x <= Seats[j].position + 2) &&
+                               !Seats[j].taken) {
+                        Seats[j].taken = true;
+                        std::cout << j << "\n";
+                        i.setSpot(j);
+                        std::cout << i.getSpot() << "\n";
+                        flag = false;
                         break;
-                    }
-                }
-                if (i.getFlag()) {
-                    m_isFrozen = true;
-                    if (m_passengers_list.back().getStartLevel() % 2 == 1) {
-                        m_passengers_list.back().move(-1);
                     } else {
-                        m_passengers_list.back().move(1);
+                        flag = true;
+                    }
+
+                if (flag) {
+                    m_isFrozen = true;
+                    if (i.getStartLevel() % 2 == 1) {
+                        i.move(-1);
+                    } else {
+                        i.move(1);
                     }
                 } else {
                     m_isFrozen = false;
@@ -526,7 +532,6 @@ int main() {
             //                      << !floors[i].isFloorEmpty()
             //                      << "\n";
             if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
-                std::cout << "A\n";
                 main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
             main_elevator.deliverPassneger(floors, &window);
