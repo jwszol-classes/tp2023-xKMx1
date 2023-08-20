@@ -82,7 +82,8 @@ private:
     int m_mass = 70;
     sf::Vector2f m_position;
     sf::Sprite m_sprite;
-    int spot;
+    bool sitting = false;
+    int m_seat = 1000;
 
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
@@ -92,7 +93,6 @@ public:
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
-        spot = -1;
 
         switch (startLevel) {
             case 0:
@@ -120,12 +120,21 @@ public:
         }
     }
 
-    bool getSpot() const {
-        return spot;
+    bool isSitting() const {
+        return sitting;
     }
 
-    void setSpot(int x) {
-        spot = x;
+    void setSitting(int x) {
+        if (x == 1000) {
+            sitting = false;
+        } else {
+            sitting = true;
+        }
+        m_seat = x;
+    }
+
+    int getSeat() {
+        return m_seat;
     }
 
     void setPos(sf::Vector2f pos) {
@@ -287,7 +296,7 @@ private:
     std::vector<Passenger> m_passengers_list;
     bool m_isFrozen;
     int m_direction;
-    Seat Seats[8] = {490, false, 518.75, false, 565, false, 602.5, false, 640, false, 677.5, false, 715, false, 720, false};
+    Seat Seats[8] = {490, false, 523, false, 556, false, 589, false, 621, false, 654, false, 687, false, 720, false};
 
 public:
     Elevator() {
@@ -344,13 +353,17 @@ public:
     void moveElevator(int floor) {
         checkCurrentLevel();
 
-        float increment;
-        if (floor >= m_currentLevel && !m_isFrozen)
+        float increment = 0;
+        if (floor > m_currentLevel && !m_isFrozen)
             increment = -1.f;
-        else if (floor <= m_currentLevel && !m_isFrozen)
+        else if (floor < m_currentLevel && !m_isFrozen)
             increment = 1.f;
         else
             increment = 0.f;
+
+        for (auto &i: m_passengers_list) {
+            i.setPos(sf::Vector2f(i.getPosition().x, i.getPosition().y + increment));
+        }
 
         switch (floor) {
             case 0:
@@ -396,31 +409,29 @@ public:
     void runElevator(std::vector<int> &queue) {
         if (!m_passengers_list.empty()) {
             for (auto &i: m_passengers_list) {
-                bool flag = false;
-                for (int j = 0; j < 8; j++)
-                    if (i.getSpot() == j) {
-                        flag = false;
-                    } else if ((i.getPosition().x >= Seats[j].position - 2 && i.getPosition().x <= Seats[j].position + 2) &&
-                               !Seats[j].taken) {
-                        Seats[j].taken = true;
-                        std::cout << j << "\n";
-                        i.setSpot(j);
-                        std::cout << i.getSpot() << "\n";
-                        flag = false;
-                        break;
-                    } else {
-                        flag = true;
+                if (!i.isSitting()) {
+                    bool flag = false;
+                    for (int j = 0; j < 8; j++) {
+                        if ((i.getPosition().x == Seats[j].position) && !Seats[j].taken) {
+                            Seats[j].taken = true;
+                            i.setSitting(j);
+                            flag = false;
+                            break;
+                        } else {
+                            flag = true;
+                        }
                     }
 
-                if (flag) {
-                    m_isFrozen = true;
-                    if (i.getStartLevel() % 2 == 1) {
-                        i.move(-1);
+                    if (flag) {
+                        m_isFrozen = true;
+                        if (i.getStartLevel() % 2 == 1) {
+                            i.move(-1);
+                        } else {
+                            i.move(1);
+                        }
                     } else {
-                        i.move(1);
+                        m_isFrozen = false;
                     }
-                } else {
-                    m_isFrozen = false;
                 }
             }
         }
@@ -453,6 +464,8 @@ public:
         for (Passenger &i: m_passengers_list) {
             if (i.getEndLevel() == m_currentLevel) {
                 floors[m_currentLevel].acceptPassenger(this->sendPassengerToFloor(target));
+                Seats[i.getSeat()].taken = false;
+                i.setSitting(1000);
             }
         }
     }
@@ -480,8 +493,9 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     std::vector<int> floorQueue;
+    floorQueue.push_back(2);
     floorQueue.push_back(3);
-    floorQueue.push_back(1);
+    floorQueue.push_back(4);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -522,6 +536,9 @@ int main() {
             }
         }
 
+        for (auto &floor: floorQueue) {
+            std::cout << floor << '\n';
+        }
         main_elevator.runElevator(floorQueue);
 
 
