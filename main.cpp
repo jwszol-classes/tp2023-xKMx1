@@ -18,6 +18,11 @@ struct Seat {
     bool taken = false;
 };
 
+struct passengerRoute {
+    int startLevel;
+    int endLevel;
+};
+
 class Button {
 private:
     int m_value;
@@ -50,6 +55,7 @@ public:
     }
 
     bool clicked(bool evnt, sf::Vector2i mousePosition) {
+//        std::cout << "C" << '\n';
         if (static_cast<float>(mousePosition.x) <= this->m_shape.getPosition().x + m_shape.getSize().x &&
             static_cast<float>(mousePosition.x) >= this->m_shape.getPosition().x &&
             static_cast<float>(mousePosition.y) <= this->m_shape.getPosition().y + m_shape.getSize().y &&
@@ -70,8 +76,7 @@ public:
 
 class Passenger {
 private:
-    int m_startLevel;
-    int m_endLevel;
+    passengerRoute m_route{};
     int m_orderNumber;
     int m_mass = 70;
     sf::Vector2f m_position;
@@ -81,8 +86,9 @@ private:
 
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
-        m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
-        m_endLevel = endLevel;
+        m_route.startLevel = 4 - startLevel;                            // TODO work out this to not hard code
+        m_route.endLevel = endLevel;
+
         m_orderNumber = orderNumber;
 
         m_sprite.setTexture(*texture);
@@ -154,11 +160,15 @@ public:
         target->draw(this->getSprite());
     }
 
+    passengerRoute getRoute() {
+        return m_route;
+    }
+
     sf::Sprite getSprite() const { return m_sprite; }
 
-    int getStartLevel() const { return m_startLevel; }
+    int getStartLevel() const { return m_route.startLevel; }
 
-    int getEndLevel() const { return m_endLevel; }
+    int getEndLevel() const { return m_route.endLevel; }
 
     int getOrderNumber() const { return m_orderNumber; }
 
@@ -218,8 +228,10 @@ public:
 
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
         for (int i = 0; i < 4; i++) {
+//            std::cout << "B" << '\n';
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-                std::cout << "ID " << m_id << "\n";
+//                std::cout << "D" << '\n';
+//                std::cout << "ID " << m_id << "\n";
                 Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
                 m_queue.push_back(newPassenger);
             }
@@ -263,6 +275,12 @@ public:
         }
         for (const auto &i: m_trash) {
             target->draw(i.getSprite());
+        }
+    }
+
+    void returnPassengers(std::vector<passengerRoute> &gameQueue) {
+        for (auto &i: m_queue) {
+            gameQueue.push_back(i.getRoute());
         }
     }
 
@@ -352,9 +370,7 @@ public:
             floor = 0;
         }
 
-        std::cout << "E " << floor << '\n';
-
-        float increment = 0;
+        float increment;
         if (floor > m_currentLevel && !m_isFrozen)
             increment = -1.f;
         else if (floor < m_currentLevel && !m_isFrozen)
@@ -485,19 +501,21 @@ public:
         }
     }
 
-//    void elevatorLogic(std::vector<int> &queue, int currentElevatorFloor) {
-//
-//    }
+    void elevatorLogic(std::vector<int> &elevatorQueue, const std::vector<int> &passengerQueue, int currentElevatorFloor) {
+        
+    }
 };
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
-    std::vector<int> floorQueue;
-    floorQueue.push_back(0);
-    floorQueue.push_back(4);
-    floorQueue.push_back(3);
-    floorQueue.push_back(2);
+    std::vector<int> queueForElevator;
+    std::vector<passengerRoute> passengerButtonQueue;
+
+    queueForElevator.push_back(0);
+    queueForElevator.push_back(4);
+    queueForElevator.push_back(3);
+    queueForElevator.push_back(2);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -510,7 +528,7 @@ int main() {
     }
     texture.setSmooth(true);
 
-    Elevator main_elevator;
+    Elevator elevator;
 
     std::vector<Floor> floors;
     for (int i = 0; i < 5; i++) {
@@ -538,34 +556,26 @@ int main() {
             }
         }
 
-        for (auto &floor: floorQueue) {
-            std::cout << floor << '\n';
-        }
-        main_elevator.runElevator(floorQueue);
+        elevator.runElevator(queueForElevator);
 
-
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
-            //            std::cout << main_elevator.getCurrentLevel() << " | " << floors[i].getFloorValue() << " | "
-            //                      << floors[i].getShape().getPosition().y << " | "
-            //                      << !floors[i].isFloorEmpty()
-            //                      << "\n";
-            if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
-                main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
+            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
+                elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
-            main_elevator.deliverPassneger(floors, &window);
+            elevator.deliverPassneger(floors, &window);
+            floors[i].returnPassengers(passengerButtonQueue);
             floors[i].getRidOfPassenger();
         }
 
 
         window.clear(sf::Color(255, 255, 255));
-        //        window.draw(main_elevator.get_rectangle());
-        main_elevator.render(&window);
-        window.draw(main_elevator.get_line());
-        window.draw(main_elevator.get_line2());
+        elevator.render(&window);
         for (int i = 0; i < 5; i++) {
             floors[i].render(&window);
         }
+        window.draw(elevator.get_line());
+        window.draw(elevator.get_line2());
 
         buttonSwitch = false;
         window.display();
