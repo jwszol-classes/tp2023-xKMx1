@@ -18,9 +18,6 @@ struct Seat {
     bool taken = false;
 };
 
-// TODO do zmiany wymiary windy i te wartosci
-
-
 class Button {
 private:
     int m_value;
@@ -38,9 +35,6 @@ public:
         this->m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
         this->m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
         this->m_shape.setFillColor(m_idleColor);
-        if (id == 3) {
-            this->m_shape.setFillColor(m_pushedColor);
-        }
 
         this->m_text.setFont(*font);
         this->m_text.setString(std::to_string(m_value));
@@ -133,13 +127,12 @@ public:
         m_seat = x;
     }
 
-    int getSeat() {
+    int getSeat() const {
         return m_seat;
     }
 
     void setPos(sf::Vector2f pos) {
         this->m_position = pos;
-
         m_sprite.setPosition(m_position);
     }
 
@@ -157,7 +150,7 @@ public:
         m_sprite.setPosition(m_position);
     }
 
-    void render(sf::RenderTarget *target) {
+    void render(sf::RenderTarget *target) const {
         target->draw(this->getSprite());
     }
 
@@ -192,12 +185,12 @@ public:
             if (m_id == i) {
                 continue;
             }
-            Button button((100 + (m_id % 2) * 900 + i * 40), SCREEN_HEIGHT - m_id * 140 - 90, 30, 30, font, m_id, i);
+            Button button((100 + (m_id % 2) * 900 + i * 40), SCREEN_HEIGHT - m_id * 140 - 100, 30, 30, font, m_id, i);
             m_otherFloorsButtons.push_back(button);
         }
 
         this->m_shape.setSize(sf::Vector2f(485.5f, 6.f));
-        this->m_shape.setFillColor(sf::Color::Green);
+        this->m_shape.setFillColor(sf::Color::Black);
 
         switch (m_id) {
             case 0:
@@ -215,7 +208,6 @@ public:
             case 3:
                 this->m_shape.setPosition(
                         sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(thirdFloorCoordinates.y) + 70));
-                this->m_shape.setFillColor(sf::Color::Black);
                 break;
             case 4:
                 this->m_shape.setPosition(
@@ -250,8 +242,12 @@ public:
 
     void getRidOfPassenger() {
         for (Passenger &i: m_trash) {
-            i.move(1);                                //TODO jakis if do okreslenia direction
-            if (i.getPosition().x > SCREEN_WIDTH) {
+            if (i.getEndLevel() % 2 == 0) {
+                i.move(-1);
+            } else {
+                i.move(1);
+            }
+            if (i.getPosition().x > SCREEN_WIDTH || i.getPosition().x < -70) {
                 m_trash.pop_back();
             }
         }
@@ -277,9 +273,7 @@ public:
         else return false;
     }
 
-    sf::RectangleShape getShape() {
-        return m_shape;
-    }
+    sf::RectangleShape getShape() { return m_shape; }
 };
 
 class Elevator {
@@ -353,6 +347,13 @@ public:
     void moveElevator(int floor) {
         checkCurrentLevel();
 
+        if (floor == 8) {
+            Sleep(5000);
+            floor = 0;
+        }
+
+        std::cout << "E " << floor << '\n';
+
         float increment = 0;
         if (floor > m_currentLevel && !m_isFrozen)
             increment = -1.f;
@@ -360,10 +361,6 @@ public:
             increment = 1.f;
         else
             increment = 0.f;
-
-        for (auto &i: m_passengers_list) {
-            i.setPos(sf::Vector2f(i.getPosition().x, i.getPosition().y + increment));
-        }
 
         switch (floor) {
             case 0:
@@ -404,6 +401,10 @@ public:
             default:
                 break;
         }
+
+        for (auto &i: m_passengers_list) {
+            i.setPos(sf::Vector2f(i.getPosition().x, m_position.y - 10));
+        }
     }
 
     void runElevator(std::vector<int> &queue) {
@@ -439,7 +440,6 @@ public:
         if (this->m_currentLevel != queue.back())
             this->moveElevator(queue.back());
         else {
-            Sleep(100);
             queue.pop_back();
         }
     }
@@ -485,17 +485,19 @@ public:
         }
     }
 
-    //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
-    //                       Floor fourthFloor, Floor fifthFloor) {}
+//    void elevatorLogic(std::vector<int> &queue, int currentElevatorFloor) {
+//
+//    }
 };
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
     std::vector<int> floorQueue;
-    floorQueue.push_back(2);
-    floorQueue.push_back(3);
+    floorQueue.push_back(0);
     floorQueue.push_back(4);
+    floorQueue.push_back(3);
+    floorQueue.push_back(2);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
