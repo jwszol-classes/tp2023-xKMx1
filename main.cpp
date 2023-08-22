@@ -307,14 +307,14 @@ private:
     std::vector<int> m_order;
     std::vector<Passenger> m_passengers_list;
     bool m_isFrozen;
-    int m_direction;
+    int m_direction;                            // 0 for down, 1 for up
     Seat Seats[8] = {490, false, 523, false, 556, false, 589, false, 621, false, 654, false, 687, false, 720, false};
 
 public:
     Elevator() {
         // rectangle(elevator)
         m_rectangle.setOrigin(m_sizeOfRectangle.x / 2, m_sizeOfRectangle.y / 2);
-        m_position = sf::Vector2f(fourthFloorCoordinates);
+        m_position = sf::Vector2f(zeroFloorCoordinates);
         m_rectangle.setPosition(m_position);
         m_rectangle.setOutlineColor(sf::Color::Black);
         m_rectangle.setSize(m_sizeOfRectangle);
@@ -366,16 +366,18 @@ public:
         checkCurrentLevel();
 
         if (floor == 8) {
-            Sleep(5000);
+//            Sleep(5000);
             floor = 0;
         }
 
         float increment;
-        if (floor > m_currentLevel && !m_isFrozen)
+        if (floor > m_currentLevel && !m_isFrozen) {
+            m_direction = 0;
             increment = -1.f;
-        else if (floor < m_currentLevel && !m_isFrozen)
+        } else if (floor < m_currentLevel && !m_isFrozen) {
+            m_direction = 1;
             increment = 1.f;
-        else
+        } else
             increment = 0.f;
 
         switch (floor) {
@@ -451,13 +453,15 @@ public:
                     }
                 }
             }
+            if (this->m_currentLevel != queue.front())
+                this->moveElevator(queue.front());
+            else {
+                queue.erase(queue.begin());
+            }
+        } else {
+            this->moveElevator(0);
         }
 
-        if (this->m_currentLevel != queue.back())
-            this->moveElevator(queue.back());
-        else {
-            queue.pop_back();
-        }
     }
 
     Passenger sendPassengerToFloor(sf::RenderTarget *target) {
@@ -501,8 +505,27 @@ public:
         }
     }
 
-    void elevatorLogic(std::vector<int> &elevatorQueue, const std::vector<int> &passengerQueue, int currentElevatorFloor) {
-        
+    bool isElevatorFull() {
+        if (m_passengers_list.size() == 8) return true;
+        else return false;
+    }
+
+    void elevatorLogic(std::vector<int> &elevatorQueue, const std::vector<passengerRoute> &passengerQueue) const {
+        if (m_direction == 1) {
+            for (auto &i: passengerQueue) {
+                if (i.startLevel > m_currentLevel) {
+                    elevatorQueue.push_back(i.startLevel);
+                    std::cout << "UP " << i.startLevel << '\n';
+                }
+            }
+        } else if (m_direction == 0) {
+            for (auto &i: passengerQueue) {
+                if (i.startLevel < m_currentLevel) {
+                    elevatorQueue.push_back(i.startLevel);
+                    std::cout << "DOWN " << i.startLevel << '\n';
+                }
+            }
+        }
     }
 };
 
@@ -511,11 +534,6 @@ int main() {
 
     std::vector<int> queueForElevator;
     std::vector<passengerRoute> passengerButtonQueue;
-
-    queueForElevator.push_back(0);
-    queueForElevator.push_back(4);
-    queueForElevator.push_back(3);
-    queueForElevator.push_back(2);
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -560,7 +578,7 @@ int main() {
 
         for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
-            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
+            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
                 elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
             elevator.deliverPassneger(floors, &window);
@@ -568,6 +586,7 @@ int main() {
             floors[i].getRidOfPassenger();
         }
 
+        elevator.elevatorLogic(queueForElevator, passengerButtonQueue);
 
         window.clear(sf::Color(255, 255, 255));
         elevator.render(&window);
