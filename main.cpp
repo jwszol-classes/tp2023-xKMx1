@@ -55,7 +55,6 @@ public:
     }
 
     bool clicked(bool evnt, sf::Vector2i mousePosition) {
-//        std::cout << "C" << '\n';
         if (static_cast<float>(mousePosition.x) <= this->m_shape.getPosition().x + m_shape.getSize().x &&
             static_cast<float>(mousePosition.x) >= this->m_shape.getPosition().x &&
             static_cast<float>(mousePosition.y) <= this->m_shape.getPosition().y + m_shape.getSize().y &&
@@ -86,7 +85,7 @@ private:
 
 public:
     Passenger(const sf::Texture *texture, int startLevel, int endLevel, int orderNumber) {
-        m_route.startLevel = 4 - startLevel;                            // TODO work out this to not hard code
+        m_route.startLevel = startLevel;
         m_route.endLevel = endLevel;
 
         m_orderNumber = orderNumber;
@@ -228,10 +227,7 @@ public:
 
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture *texture) {
         for (int i = 0; i < 4; i++) {
-//            std::cout << "B" << '\n';
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-//                std::cout << "D" << '\n';
-//                std::cout << "ID " << m_id << "\n";
                 Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
                 m_queue.push_back(newPassenger);
             }
@@ -362,13 +358,13 @@ public:
             m_currentLevel = 4;
     }
 
-    void moveElevator(int floor) {
+    void moveElevator(int floor) {                 //TODO cos sie nie popuje po dotarciu na pietro
         checkCurrentLevel();
 
-        if (floor == 8) {
+//        if (floor == 8) {
 //            Sleep(5000);
-            floor = 0;
-        }
+//            floor = 0;
+//        }
 
         float increment;
         if (floor > m_currentLevel && !m_isFrozen) {
@@ -464,7 +460,7 @@ public:
 
     }
 
-    Passenger sendPassengerToFloor(sf::RenderTarget *target) {
+    Passenger sendPassengerToFloor(sf::RenderTarget *target) {        //TODO dodac jakis freeze zeby zdazyl wysiasc
         Passenger passenger(m_passengers_list.back().getSprite().getTexture(), m_passengers_list.back().getStartLevel(),
                             m_passengers_list.back().getEndLevel(),
                             m_passengers_list.back().getOrderNumber());
@@ -512,15 +508,17 @@ public:
 
     void elevatorLogic(std::vector<int> &elevatorQueue, const std::vector<passengerRoute> &passengerQueue) const {
         if (m_direction == 1) {
-            for (auto &i: passengerQueue) {
-                if (i.startLevel > m_currentLevel) {
+            for (auto &i: passengerQueue) {                       //TODO dodac warunki dla endleveli
+                if (i.startLevel > m_currentLevel &&
+                    !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
                     elevatorQueue.push_back(i.startLevel);
                     std::cout << "UP " << i.startLevel << '\n';
                 }
             }
         } else if (m_direction == 0) {
             for (auto &i: passengerQueue) {
-                if (i.startLevel < m_currentLevel) {
+                if (i.startLevel < m_currentLevel &&
+                    !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
                     elevatorQueue.push_back(i.startLevel);
                     std::cout << "DOWN " << i.startLevel << '\n';
                 }
@@ -587,6 +585,11 @@ int main() {
         }
 
         elevator.elevatorLogic(queueForElevator, passengerButtonQueue);
+
+        for (auto &i: queueForElevator) {
+            std::cout << i << '\n';
+        }
+        std::cout << "--------------" << '\n';
 
         window.clear(sf::Color(255, 255, 255));
         elevator.render(&window);
