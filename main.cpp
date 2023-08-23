@@ -248,15 +248,22 @@ public:
         m_trash.push_back(passenger);
     }
 
-    void getRidOfPassenger() {
+    void getRidOfPassenger(bool &freeze) {
         for (Passenger &i: m_trash) {
             if (i.getEndLevel() % 2 == 0) {
                 i.move(-1);
             } else {
                 i.move(1);
             }
+
             if (i.getPosition().x > SCREEN_WIDTH || i.getPosition().x < -70) {
                 m_trash.pop_back();
+            }
+
+            if (i.getPosition().x >= 440 && i.getPosition().x <= 790) {
+                freeze = true;
+            } else {
+                freeze = false;
             }
         }
     }
@@ -460,7 +467,7 @@ public:
 
     }
 
-    Passenger sendPassengerToFloor(sf::RenderTarget *target) {        //TODO dodac jakis freeze zeby zdazyl wysiasc
+    Passenger sendPassengerToFloor(sf::RenderTarget *target) {
         Passenger passenger(m_passengers_list.back().getSprite().getTexture(), m_passengers_list.back().getStartLevel(),
                             m_passengers_list.back().getEndLevel(),
                             m_passengers_list.back().getOrderNumber());
@@ -493,6 +500,10 @@ public:
     sf::RectangleShape get_line2() { return m_line2; }
 
     int getCurrentLevel() const { return m_currentLevel; }
+
+    bool &setElevatorFreeze() {
+        return m_isFrozen;
+    }
 
     void render(sf::RenderTarget *target) {
         target->draw(this->m_rectangle);
@@ -572,7 +583,6 @@ int main() {
             }
         }
 
-        elevator.runElevator(queueForElevator);
 
         for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
@@ -581,10 +591,11 @@ int main() {
             }
             elevator.deliverPassneger(floors, &window);
             floors[i].returnPassengers(passengerButtonQueue);
-            floors[i].getRidOfPassenger();
+            floors[i].getRidOfPassenger(elevator.setElevatorFreeze());
         }
 
         elevator.elevatorLogic(queueForElevator, passengerButtonQueue);
+        elevator.runElevator(queueForElevator);
 
         for (auto &i: queueForElevator) {
             std::cout << i << '\n';
