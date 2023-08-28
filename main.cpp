@@ -18,7 +18,7 @@ struct Seat {
     bool taken = false;
 };
 
-struct passengerRoute {
+struct passengerRoute : public _GUID {
     int startLevel;
     int endLevel;
 };
@@ -283,7 +283,18 @@ public:
 
     void returnPassengers(std::vector<passengerRoute> &gameQueue) {
         for (auto &i: m_queue) {
-            gameQueue.push_back(i.getRoute());
+            if (gameQueue.empty()) {
+                gameQueue.push_back(i.getRoute());
+            }
+            bool flag = true;
+            for (auto &j: gameQueue) {
+                if (j.startLevel == i.getStartLevel() && j.endLevel == i.getEndLevel()) {
+                    flag = false;
+                }
+            }
+            if (flag) {
+                gameQueue.push_back(i.getRoute());
+            }
         }
     }
 
@@ -368,17 +379,12 @@ public:
     void moveElevator(int floor) {                 //TODO cos sie nie popuje po dotarciu na pietro
         checkCurrentLevel();
 
-//        if (floor == 8) {
-//            Sleep(5000);
-//            floor = 0;
-//        }
-
         float increment;
         if (floor > m_currentLevel && !m_isFrozen) {
-            m_direction = 0;
+            m_direction = 1;
             increment = -1.f;
         } else if (floor < m_currentLevel && !m_isFrozen) {
-            m_direction = 1;
+            m_direction = 0;
             increment = 1.f;
         } else
             increment = 0.f;
@@ -428,52 +434,62 @@ public:
         }
     }
 
-    void runElevator(std::vector<int> &queue) {
-        if (!m_passengers_list.empty()) {
-            for (auto &i: m_passengers_list) {
-                if (!i.isSitting()) {
-                    bool flag = false;
-                    for (int j = 0; j < 8; j++) {
-                        if ((i.getPosition().x == Seats[j].position) && !Seats[j].taken) {
-                            Seats[j].taken = true;
-                            i.setSitting(j);
-                            flag = false;
-                            break;
-                        } else {
-                            flag = true;
-                        }
-                    }
-
-                    if (flag) {
-                        m_isFrozen = true;
-                        if (i.getStartLevel() % 2 == 1) {
-                            i.move(-1);
-                        } else {
-                            i.move(1);
-                        }
-                    } else {
-                        m_isFrozen = false;
-                    }
+    void takeSeat(Passenger &passenger) {
+        if (!passenger.isSitting()) {
+            bool flag = false;
+            for (int j = 0; j < 8; j++) {
+                if ((passenger.getPosition().x == Seats[j].position) && !Seats[j].taken) {
+                    Seats[j].taken = true;
+                    passenger.setSitting(j);
+                    flag = false;
+                    break;
+                } else {
+                    flag = true;
                 }
             }
-            if (this->m_currentLevel != queue.front())
-                this->moveElevator(queue.front());
-            else {
+            if (flag) {
+                m_isFrozen = true;
+                if (passenger.getStartLevel() % 2 == 1) {
+                    passenger.move(-1);
+                } else {
+                    passenger.move(1);
+                }
+            } else {
+                m_isFrozen = false;
+            }
+        }
+    }
+
+    void runElevator(std::vector<int> &queue) {
+        for (auto &i: m_passengers_list) {
+            takeSeat(i);
+        }
+        if (!m_passengers_list.empty()) {
+            if (m_currentLevel != queue.front()) {
+                moveElevator(queue.front());
+            } else {
                 queue.erase(queue.begin());
             }
         } else {
-            this->moveElevator(0);
+            if (!queue.empty()) {
+                moveElevator(queue.front());
+                if (m_currentLevel == queue.front()) {
+                    queue.erase(queue.begin());
+                }
+            } else {
+                moveElevator(0);
+            }
         }
-
     }
 
-    Passenger sendPassengerToFloor(sf::RenderTarget *target) {
+    Passenger sendPassengerToFloor(sf::RenderTarget *target, std::vector<passengerRoute> &queue) {
         Passenger passenger(m_passengers_list.back().getSprite().getTexture(), m_passengers_list.back().getStartLevel(),
                             m_passengers_list.back().getEndLevel(),
                             m_passengers_list.back().getOrderNumber());
         passenger.setPos(m_passengers_list.back().getSprite().getPosition());
         target->draw(passenger.getSprite());
         m_passengers_list.pop_back();
+        queue.erase(queue.begin());
 
         return passenger;
     }
@@ -483,10 +499,10 @@ public:
         m_totalPassengerMass = passenger.getMass();
     }
 
-    void deliverPassneger(std::vector<Floor> &floors, sf::RenderTarget *target) {
+    void deliverPassneger(std::vector<Floor> &floors, sf::RenderTarget *target, std::vector<passengerRoute> &queue) {
         for (Passenger &i: m_passengers_list) {
             if (i.getEndLevel() == m_currentLevel) {
-                floors[m_currentLevel].acceptPassenger(this->sendPassengerToFloor(target));
+                floors[m_currentLevel].acceptPassenger(this->sendPassengerToFloor(target, queue));
                 Seats[i.getSeat()].taken = false;
                 i.setSitting(1000);
             }
@@ -518,22 +534,58 @@ public:
     }
 
     void elevatorLogic(std::vector<int> &elevatorQueue, const std::vector<passengerRoute> &passengerQueue) const {
-        if (m_direction == 1) {
-            for (auto &i: passengerQueue) {                       //TODO dodac warunki dla endleveli
-                if (i.startLevel > m_currentLevel &&
-                    !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
-                    elevatorQueue.push_back(i.startLevel);
-                    std::cout << "UP " << i.startLevel << '\n';
+        for (auto &i: passengerQueue) {
+            if (!((std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end()) &&
+                  (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) != elevatorQueue.end()))) {
+                if (m_direction == 1) {
+                    if (i.endLevel > m_currentLevel) {
+                        elevatorQueue.insert(elevatorQueue.begin(), i.endLevel);
+                    }
+                    if (i.startLevel > m_currentLevel) {
+                        elevatorQueue.insert(elevatorQueue.begin(), i.startLevel);
+                    }
+                }
+                if (m_direction == 0) {
+                    if (i.startLevel < m_currentLevel) {
+                        elevatorQueue.insert(elevatorQueue.begin(), i.startLevel);
+                    }
+                    if (i.endLevel < m_currentLevel) {
+                        elevatorQueue.insert(elevatorQueue.begin(), i.endLevel);
+                    }
                 }
             }
-        } else if (m_direction == 0) {
-            for (auto &i: passengerQueue) {
-                if (i.startLevel < m_currentLevel &&
-                    !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
-                    elevatorQueue.push_back(i.startLevel);
-                    std::cout << "DOWN " << i.startLevel << '\n';
-                }
-            }
+//            if (i.startLevel > m_currentLevel && m_direction == 1 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.startLevel);
+//            }
+//            if (i.endLevel > m_currentLevel && m_direction == 1 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.endLevel);
+//            }
+//            if (i.startLevel < m_currentLevel && m_direction == 0 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.startLevel);
+//            }
+//            if (i.endLevel < m_currentLevel && m_direction == 0 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.endLevel);
+//            }
+//            if (i.startLevel < m_currentLevel && m_direction == 1 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.startLevel);
+//            }
+//            if (i.endLevel < m_currentLevel && m_direction == 1 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.endLevel);
+//            }
+//            if (i.startLevel > m_currentLevel && m_direction == 0 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.startLevel);
+//            }
+//            if (i.endLevel > m_currentLevel && m_direction == 0 &&
+//                !(std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) != elevatorQueue.end())) {
+//                elevatorQueue.push_back(i.endLevel);
+//            }
         }
     }
 };
@@ -589,17 +641,22 @@ int main() {
             if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
                 elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
-            elevator.deliverPassneger(floors, &window);
+            elevator.deliverPassneger(floors, &window, passengerButtonQueue);
             floors[i].returnPassengers(passengerButtonQueue);
             floors[i].getRidOfPassenger(elevator.setElevatorFreeze());
-        }
+        }                                                                     //TODO dodaæ funckcje reserve dla vektora windy ¿eby nie resizeowaæ
 
-        elevator.elevatorLogic(queueForElevator, passengerButtonQueue);
+        elevator.elevatorLogic(queueForElevator, passengerButtonQueue);      //TODO do konstruktorow dodaæ lisy inicjowania
         elevator.runElevator(queueForElevator);
 
-        for (auto &i: queueForElevator) {
-            std::cout << i << '\n';
+        for (auto &i: queueForElevator) {                                  //TODO usun¹æ this->y
+            std::cout << i << ' ';
         }
+        std::cout << '\n';
+        for (auto &j: passengerButtonQueue) {
+            std::cout << '(' << j.startLevel << " | " << j.endLevel << ") ";
+        }
+        std::cout << '\n';
         std::cout << "--------------" << '\n';
 
         window.clear(sf::Color(255, 255, 255));
