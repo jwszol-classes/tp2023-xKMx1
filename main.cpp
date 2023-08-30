@@ -13,6 +13,16 @@ const sf::Vector2i secondFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREE
 const sf::Vector2i thirdFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (7 * 70));
 const sf::Vector2i fourthFloorCoordinates = sf::Vector2i(SCREEN_WIDTH / 2, SCREEN_HEIGHT - (9 * 70));
 
+struct Seat {
+    float position;
+    bool taken = false;
+};
+
+struct passengerRoute : public _GUID {
+    int startLevel;
+    int endLevel;
+};
+
 class Button {
 private:
     int m_value;
@@ -30,9 +40,6 @@ public:
         this->m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
         this->m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
         this->m_shape.setFillColor(m_idleColor);
-        if (id == 3) {
-            this->m_shape.setFillColor(m_pushedColor);
-        }
 
         this->m_text.setFont(*font);
         this->m_text.setString(std::to_string(m_value));
@@ -68,17 +75,19 @@ public:
 
 class Passenger {
 private:
-    int m_startLevel;
-    int m_endLevel;
+    passengerRoute m_route{};
     int m_orderNumber;
     int m_mass = 70;
     sf::Vector2f m_position;
     sf::Sprite m_sprite;
+    bool sitting = false;
+    int m_seat = 1000;
 
 public:
     Passenger(const sf::Texture* texture, int startLevel, int endLevel, int orderNumber) {
-        m_startLevel = 4 - startLevel;                                         // TODO work out this to not hard code
-        m_endLevel = endLevel;
+        m_route.startLevel = startLevel;
+        m_route.endLevel = endLevel;
+
         m_orderNumber = orderNumber;
 
         m_sprite.setTexture(*texture);
@@ -110,9 +119,26 @@ public:
         }
     }
 
+    bool isSitting() const {
+        return sitting;
+    }
+
+    void setSitting(int x) {
+        if (x == 1000) {
+            sitting = false;
+        }
+        else {
+            sitting = true;
+        }
+        m_seat = x;
+    }
+
+    int getSeat() const {
+        return m_seat;
+    }
+
     void setPos(sf::Vector2f pos) {
         this->m_position = pos;
-
         m_sprite.setPosition(m_position);
     }
 
@@ -130,15 +156,19 @@ public:
         m_sprite.setPosition(m_position);
     }
 
-    void render(sf::RenderTarget* target) {
+    void render(sf::RenderTarget* target) const {
         target->draw(this->getSprite());
+    }
+
+    passengerRoute getRoute() {
+        return m_route;
     }
 
     sf::Sprite getSprite() const { return m_sprite; }
 
-    int getStartLevel() const { return m_startLevel; }
+    int getStartLevel() const { return m_route.startLevel; }
 
-    int getEndLevel() const { return m_endLevel; }
+    int getEndLevel() const { return m_route.endLevel; }
 
     int getOrderNumber() const { return m_orderNumber; }
 
@@ -152,6 +182,7 @@ public:
 class Floor {
 private:
     std::vector<Passenger> m_queue;
+    std::vector<Passenger> m_trash;
     std::vector<Button> m_otherFloorsButtons;
     sf::RectangleShape m_shape;
     int m_id;
@@ -164,12 +195,12 @@ public:
             if (m_id == i) {
                 continue;
             }
-            Button button((100 + (m_id % 2) * 900 + i * 40), SCREEN_HEIGHT - m_id * 140 - 90, 30, 30, font, m_id, i);
+            Button button((100 + (m_id % 2) * 900 + i * 40), SCREEN_HEIGHT - m_id * 140 - 100, 30, 30, font, m_id, i);
             m_otherFloorsButtons.push_back(button);
         }
 
         this->m_shape.setSize(sf::Vector2f(485.5f, 6.f));
-        this->m_shape.setFillColor(sf::Color::Green);
+        this->m_shape.setFillColor(sf::Color::Black);
 
         switch (m_id) {
         case 0:
@@ -187,7 +218,6 @@ public:
         case 3:
             this->m_shape.setPosition(
                 sf::Vector2f((static_cast<float>(m_id % 2) * 794.f), static_cast<float>(thirdFloorCoordinates.y) + 70));
-            this->m_shape.setFillColor(sf::Color::Black);
             break;
         case 4:
             this->m_shape.setPosition(
@@ -199,7 +229,6 @@ public:
     void listenForButtons(bool evnt, sf::Vector2i mousePos, const sf::Texture* texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(evnt, mousePos)) {
-                std::cout << "ID " << m_id << "\n";
                 Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
                 m_queue.push_back(newPassenger);
             }
@@ -216,7 +245,30 @@ public:
         return passenger;
     }
 
-    [[maybe_unused]] void getRidOfPassenger(const Passenger& passenger) {
+    void acceptPassenger(const Passenger& passenger) {
+        m_trash.push_back(passenger);
+    }
+
+    void getRidOfPassenger(bool& freeze) {
+        for (Passenger& i : m_trash) {
+            if (i.getEndLevel() % 2 == 0) {
+                i.move(-1);
+            }
+            else {
+                i.move(1);
+            }
+
+            if (i.getPosition().x > SCREEN_WIDTH || i.getPosition().x < -70) {
+                m_trash.pop_back();
+            }
+
+            if (i.getPosition().x >= 440 && i.getPosition().x <= 790) {
+                freeze = true;
+            }
+            else {
+                freeze = false;
+            }
+        }
     }
 
     void render(sf::RenderTarget* target) {
@@ -227,6 +279,26 @@ public:
         for (const auto& i : m_queue) {
             target->draw(i.getSprite());
         }
+        for (const auto& i : m_trash) {
+            target->draw(i.getSprite());
+        }
+    }
+
+    void returnPassengers(std::vector<passengerRoute>& gameQueue) {
+        for (auto& i : m_queue) {
+            if (gameQueue.empty()) {
+                gameQueue.push_back(i.getRoute());
+            }
+            bool flag = true;
+            for (auto& j : gameQueue) {
+                if (j.startLevel == i.getStartLevel() && j.endLevel == i.getEndLevel()) {
+                    flag = false;
+                }
+            }
+            if (flag) {
+                gameQueue.push_back(i.getRoute());
+            }
+        }
     }
 
     int getFloorValue() const { return m_id; }
@@ -236,9 +308,7 @@ public:
         else return false;
     }
 
-    sf::RectangleShape getShape() {
-        return m_shape;
-    }
+    sf::RectangleShape getShape() { return m_shape; }
 };
 
 class Elevator {
@@ -253,13 +323,15 @@ private:
     sf::Vector2f m_sizeOfLine = sf::Vector2f(2000.0f, 5.0f);
     std::vector<int> m_order;
     std::vector<Passenger> m_passengers_list;
-    int m_direction;
+    bool m_isFrozen;
+    int m_direction;                            // 0 for down, 1 for up
+    Seat Seats[8] = { 490, false, 523, false, 556, false, 589, false, 621, false, 654, false, 687, false, 720, false };
 
 public:
     Elevator() {
         // rectangle(elevator)
         m_rectangle.setOrigin(m_sizeOfRectangle.x / 2, m_sizeOfRectangle.y / 2);
-        m_position = sf::Vector2f(fourthFloorCoordinates);
+        m_position = sf::Vector2f(zeroFloorCoordinates);
         m_rectangle.setPosition(m_position);
         m_rectangle.setOutlineColor(sf::Color::Black);
         m_rectangle.setSize(m_sizeOfRectangle);
@@ -286,34 +358,41 @@ public:
         m_currentLevel = 0;
         m_totalPassengerMass = 0;
         m_direction = 1; // 1 for up, -1 for down
+        m_isFrozen = false;
     }
 
     void checkCurrentLevel() {
-        if (m_position.y < static_cast<float>(zeroFloorCoordinates.y) + 2.f &&
-            m_position.y > static_cast<float>(zeroFloorCoordinates.y) - 2.f)
+        if (m_position.y < static_cast<float>(zeroFloorCoordinates.y) + 4.f &&
+            m_position.y >= static_cast<float>(zeroFloorCoordinates.y) - 4.f)
             m_currentLevel = 0;
-        else if (m_position.y <= static_cast<float>(firstFloorCoordinates.y) + 2.f &&
-            m_position.y > static_cast<float>(firstFloorCoordinates.y) - 2.f)
+        else if (m_position.y <= static_cast<float>(firstFloorCoordinates.y) + 4.f &&
+            m_position.y > static_cast<float>(firstFloorCoordinates.y) - 4.f)
             m_currentLevel = 1;
-        else if (m_position.y <= static_cast<float>(secondFloorCoordinates.y) + 2.f &&
-            m_position.y > static_cast<float>(secondFloorCoordinates.y) - 2.f)
+        else if (m_position.y <= static_cast<float>(secondFloorCoordinates.y) + 4.f &&
+            m_position.y > static_cast<float>(secondFloorCoordinates.y) - 4.f)
             m_currentLevel = 2;
-        else if (m_position.y <= static_cast<float>(thirdFloorCoordinates.y) + 2.f &&
-            m_position.y > static_cast<float>(thirdFloorCoordinates.y) - 2.f)
+        else if (m_position.y <= static_cast<float>(thirdFloorCoordinates.y) + 4.f &&
+            m_position.y > static_cast<float>(thirdFloorCoordinates.y) - 4.f)
             m_currentLevel = 3;
-        else if (m_position.y <= static_cast<float>(fourthFloorCoordinates.y) + 2.f &&
-            m_position.y > static_cast<float>(fourthFloorCoordinates.y) - 2.f)
+        else if (m_position.y <= static_cast<float>(fourthFloorCoordinates.y) + 4.f &&
+            m_position.y > static_cast<float>(fourthFloorCoordinates.y) - 4.f)
             m_currentLevel = 4;
     }
 
-    void moveElevator(int floor) {
+    void moveElevator(int floor) {                 //TODO cos sie nie popuje po dotarciu na pietro
         checkCurrentLevel();
 
         float increment;
-        if (floor > m_currentLevel)
+        if (floor > m_currentLevel && !m_isFrozen) {
+            m_direction = 1;
             increment = -1.f;
-        else
+        }
+        else if (floor < m_currentLevel && !m_isFrozen) {
+            m_direction = 0;
             increment = 1.f;
+        }
+        else
+            increment = 0.f;
 
         switch (floor) {
         case 0:
@@ -359,27 +438,76 @@ public:
         default:
             break;
         }
+
+        for (auto& i : m_passengers_list) {
+            i.setPos(sf::Vector2f(i.getPosition().x, m_position.y - 10));
+        }
+    }
+
+    void takeSeat(Passenger& passenger) {
+        if (!passenger.isSitting()) {
+            bool flag = false;
+            for (int j = 0; j < 8; j++) {
+                if ((passenger.getPosition().x == Seats[j].position) && !Seats[j].taken) {
+                    Seats[j].taken = true;
+                    passenger.setSitting(j);
+                    flag = false;
+                    break;
+                }
+                else {
+                    flag = true;
+                }
+            }
+            if (flag) {
+                m_isFrozen = true;
+                if (passenger.getStartLevel() % 2 == 1) {
+                    passenger.move(-1);
+                }
+                else {
+                    passenger.move(1);
+                }
+            }
+            else {
+                m_isFrozen = false;
+            }
+        }
     }
 
     void runElevator(std::vector<int>& queue) {
+        for (auto& i : m_passengers_list) {
+            takeSeat(i);
+        }
         if (!m_passengers_list.empty()) {
-            if (m_passengers_list.back().getPosition().x != 600) {
-                std::cout << m_passengers_list.back().getPosition().x << '\n';
-                if (m_passengers_list.back().getStartLevel() % 2 == 1) {
-                    m_passengers_list.back().move(-1);
-                }
-                else {
-                    m_passengers_list.back().move(1);
-                }
+            if (m_currentLevel != queue.front()) {
+                moveElevator(queue.front());
+            }
+            else {
+                queue.erase(queue.begin());
             }
         }
-
-        if (this->m_currentLevel != queue.back())
-            this->moveElevator(queue.back());
         else {
-            Sleep(100);
-            queue.pop_back();
+            if (!queue.empty()) {
+                moveElevator(queue.front());
+                if (m_currentLevel == queue.front()) {
+                    queue.erase(queue.begin());
+                }
+            }
+            else {
+                moveElevator(0);
+            }
         }
+    }
+
+    Passenger sendPassengerToFloor(sf::RenderTarget* target, std::vector<passengerRoute>& queue) {
+        Passenger passenger(m_passengers_list.back().getSprite().getTexture(), m_passengers_list.back().getStartLevel(),
+            m_passengers_list.back().getEndLevel(),
+            m_passengers_list.back().getOrderNumber());
+        passenger.setPos(m_passengers_list.back().getSprite().getPosition());
+        target->draw(passenger.getSprite());
+        m_passengers_list.pop_back();
+        queue.erase(queue.begin());
+
+        return passenger;
     }
 
     void acceptPassenger(const Passenger& passenger) {
@@ -387,11 +515,14 @@ public:
         m_totalPassengerMass = passenger.getMass();
     }
 
-    Passenger deliverPassneger() {
-        Passenger passenger = m_passengers_list.back();
-        m_passengers_list.pop_back();
-
-        return passenger;
+    void deliverPassneger(std::vector<Floor>& floors, sf::RenderTarget* target, std::vector<passengerRoute>& queue) {
+        for (Passenger& i : m_passengers_list) {
+            if (i.getEndLevel() == m_currentLevel) {
+                floors[m_currentLevel].acceptPassenger(this->sendPassengerToFloor(target, queue));
+                Seats[i.getSeat()].taken = false;
+                i.setSitting(1000);
+            }
+        }
     }
 
     sf::RectangleShape get_rectangle() { return m_rectangle; }
@@ -402,6 +533,10 @@ public:
 
     int getCurrentLevel() const { return m_currentLevel; }
 
+    bool& setElevatorFreeze() {
+        return m_isFrozen;
+    }
+
     void render(sf::RenderTarget* target) {
         target->draw(this->m_rectangle);
         for (const auto& i : m_passengers_list) {
@@ -409,15 +544,61 @@ public:
         }
     }
 
-    //    void elevatorLogic(Floor firstFloor, Floor secondFloor, Floor thirdFloor,
-    //                       Floor fourthFloor, Floor fifthFloor) {}
+    bool isElevatorFull() {
+        if (m_passengers_list.size() == 8) return true;
+        else return false;
+    }
+
+    void elevatorLogic(std::vector<int>& elevatorQueue, const std::vector<passengerRoute>& passengerQueue) {
+        for (auto& i : passengerQueue) {
+            if (m_direction == 1) {
+                if (i.startLevel > m_currentLevel) {
+                    if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                        elevatorQueue.push_back(i.startLevel);
+                    }
+                }
+                if (i.endLevel > m_currentLevel) {
+                    if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
+                        elevatorQueue.push_back(i.endLevel);
+                    }
+                }
+                if ((i.startLevel || i.endLevel) < m_currentLevel) {
+                    m_direction = 0;
+                }
+                std::sort(elevatorQueue.begin(), elevatorQueue.end());
+            }
+            if (m_direction == 0) {
+                if (i.endLevel < m_currentLevel) {
+                    if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
+                        elevatorQueue.push_back(i.endLevel);
+                    }
+                }
+                if (i.startLevel < m_currentLevel) {
+                    if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                        elevatorQueue.push_back(i.startLevel);
+                    }
+                }
+                if ((i.startLevel || i.endLevel) > m_currentLevel) {
+                    m_direction = 1;
+                }
+                std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
+                    return a > b;
+                    });
+            }
+
+            if (passengerQueue.empty()) {
+                std::cout << "A";
+                elevatorQueue.clear();
+            }
+        }
+    }
 };
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Elevator Simulation");
 
-    std::vector<int> floorQueue;
-    floorQueue.push_back(3);
+    std::vector<int> queueForElevator;
+    std::vector<passengerRoute> passengerButtonQueue;
 
     sf::Font font;
     if (!font.loadFromFile("font/Akira Expanded Demo.otf")) {
@@ -430,7 +611,7 @@ int main() {
     }
     texture.setSmooth(true);
 
-    Elevator main_elevator;
+    Elevator elevator;
 
     std::vector<Floor> floors;
     for (int i = 0; i < 5; i++) {
@@ -458,30 +639,37 @@ int main() {
             }
         }
 
-        main_elevator.runElevator(floorQueue);
 
-
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
-            //            std::cout << main_elevator.getCurrentLevel() << " | " << floors[i].getFloorValue() << " | "
-            //                      << floors[i].getShape().getPosition().y << " | "
-            //                      << !floors[i].isFloorEmpty()
-            //                      << "\n";
-            if (main_elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty()) {
-                std::cout << "A\n";
-                main_elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
+            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
+                elevator.acceptPassenger(floors[i].sendPassengerToElevator(&window));
             }
-        }
+            elevator.deliverPassneger(floors, &window, passengerButtonQueue);
+            floors[i].returnPassengers(passengerButtonQueue);
+            floors[i].getRidOfPassenger(elevator.setElevatorFreeze());
+        }                                                                     //TODO dodaæ funckcje reserve dla vektora windy ¿eby nie resizeowaæ
 
+        elevator.elevatorLogic(queueForElevator, passengerButtonQueue);      //TODO do konstruktorow dodaæ lisy inicjowania
+        elevator.runElevator(queueForElevator);                 //wywala siê linijke wyzej w elevator logic
+
+        for (auto& i : queueForElevator) {                                  //TODO usun¹æ this->y
+            std::cout << i << ' ';
+        }
+        std::cout << '\n';
+        for (auto& j : passengerButtonQueue) {
+            std::cout << '(' << j.startLevel << " | " << j.endLevel << ") ";
+        }
+        std::cout << '\n';
+        std::cout << "--------------" << '\n';
 
         window.clear(sf::Color(255, 255, 255));
-        //        window.draw(main_elevator.get_rectangle());
-        main_elevator.render(&window);
-        window.draw(main_elevator.get_line());
-        window.draw(main_elevator.get_line2());
+        elevator.render(&window);
         for (int i = 0; i < 5; i++) {
             floors[i].render(&window);
         }
+        window.draw(elevator.get_line());
+        window.draw(elevator.get_line2());
 
         buttonSwitch = false;
         window.display();
