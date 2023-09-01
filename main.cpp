@@ -25,8 +25,8 @@ struct passengerRoute : public _GUID {
 
 class Button {
 private:
-    int m_value;
-    sf::RectangleShape m_shape;
+    int m_value{};
+    sf::RectangleShape m_shape{};
     sf::Text m_text;
     sf::Vector2f m_textPositionVector;
 
@@ -35,16 +35,16 @@ private:
 
 public:
     Button(int x, int y, int width, int height, sf::Font *font, int id, int value = 0) {
-        this->m_value = value;
+        m_value = value;
 
-        this->m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
-        this->m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
-        this->m_shape.setFillColor(m_idleColor);
+        m_shape.setSize(sf::Vector2f(static_cast<float>(width), static_cast<float>(height)));
+        m_shape.setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
+        m_shape.setFillColor(m_idleColor);
 
-        this->m_text.setFont(*font);
-        this->m_text.setString(std::to_string(m_value));
-        this->m_text.setFillColor(sf::Color::Black);
-        this->m_text.setCharacterSize(25);
+        m_text.setFont(*font);
+        m_text.setString(std::to_string(m_value));
+        m_text.setFillColor(sf::Color::Black);
+        m_text.setCharacterSize(25);
 
         m_textPositionVector = sf::Vector2f((m_shape.getGlobalBounds().getPosition().x) + (m_shape.getGlobalBounds().getSize().x / 2.f) -
                                             (m_text.getGlobalBounds().getSize().x / 2.f),
@@ -95,23 +95,23 @@ public:
 
         switch (startLevel) {
             case 0:
-                this->m_sprite.setPosition(
+                m_sprite.setPosition(
                         sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(zeroFloorCoordinates.y - 10)));
                 break;
             case 1:
-                this->m_sprite.setPosition(
+                m_sprite.setPosition(
                         sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(firstFloorCoordinates.y - 10)));
                 break;
             case 2:
-                this->m_sprite.setPosition(
+                m_sprite.setPosition(
                         sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(secondFloorCoordinates.y - 10)));
                 break;
             case 3:
-                this->m_sprite.setPosition(
+                m_sprite.setPosition(
                         sf::Vector2f((800.f + 40.f * static_cast<float>(orderNumber)), static_cast<float>(thirdFloorCoordinates.y - 10)));
                 break;
             case 4:
-                this->m_sprite.setPosition(
+                m_sprite.setPosition(
                         sf::Vector2f((400.f - 40.f * static_cast<float>(orderNumber)), static_cast<float>(fourthFloorCoordinates.y - 10)));
                 break;
             default:
@@ -198,8 +198,8 @@ public:
             m_otherFloorsButtons.push_back(button);
         }
 
-        this->m_shape.setSize(sf::Vector2f(485.5f, 6.f));
-        this->m_shape.setFillColor(sf::Color::Black);
+        m_shape.setSize(sf::Vector2f(485.5f, 6.f));
+        m_shape.setFillColor(sf::Color::Black);
 
         switch (m_id) {
             case 0:
@@ -235,12 +235,12 @@ public:
     }
 
     Passenger sendPassengerToElevator(sf::RenderTarget *target) {
-        Passenger passenger(m_queue.back().getSprite().getTexture(), m_queue.back().getStartLevel(), m_queue.back().getEndLevel(),
-                            m_queue.back().getOrderNumber());
-        passenger.setPos(m_queue.back().getSprite().getPosition());
+        Passenger passenger(m_queue.front().getSprite().getTexture(), m_queue.front().getStartLevel(), m_queue.front().getEndLevel(),
+                            m_queue.front().getOrderNumber());
+        passenger.setPos(m_queue.front().getSprite().getPosition());
         target->draw(passenger.getSprite());
-        m_queue.pop_back();
-
+        m_queue.erase(m_queue.begin());                                     //TODO move passenger to front of the queue
+        //TODO check sending by reference
         return passenger;
     }
 
@@ -249,6 +249,7 @@ public:
     }
 
     void getRidOfPassenger(bool &freeze) {
+        int count = 0;
         for (Passenger &i: m_trash) {
             if (i.getEndLevel() % 2 == 0) {
                 i.move(-1);
@@ -257,7 +258,8 @@ public:
             }
 
             if (i.getPosition().x > SCREEN_WIDTH || i.getPosition().x < -70) {
-                m_trash.pop_back();
+//                m_trash.pop_back();
+                m_trash.erase(m_trash.begin() + count);
             }
 
             if (i.getPosition().x >= 440 && i.getPosition().x <= 790) {
@@ -265,6 +267,7 @@ public:
             } else {
                 freeze = false;
             }
+            count++;
         }
     }
 
@@ -301,11 +304,9 @@ public:
     int getFloorValue() const { return m_id; }
 
     bool isFloorEmpty() {
-        if (this->m_queue.empty()) return true;
+        if (m_queue.empty()) return true;
         else return false;
     }
-
-    sf::RectangleShape getShape() { return m_shape; }
 };
 
 class Elevator {
