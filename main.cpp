@@ -265,7 +265,7 @@ public:
         return passenger;
     }
 
-    void acceptPassenger(const Passenger &passenger) {
+    void acceptPassengerToFloor(const Passenger &passenger) {
         m_deleteQueue.push_back(passenger);
     }
 
@@ -431,7 +431,7 @@ public:
     void takeSeat(Passenger &passenger) {
         bool sittingFlag = false;
         for (int j = 0; j < 8; j++) {               //for every seat in elevator
-            if ((passenger.getPosition().x == Seats[j].position) && !Seats[j].taken) {
+            if (((passenger.getPosition().x > Seats[j].position - 2) && (passenger.getPosition().x < Seats[j].position + 2)) && !Seats[j].taken) {
                 Seats[j].taken = true;
                 passenger.setSitting(j);
                 sittingFlag = false;
@@ -467,6 +467,11 @@ public:
     void runElevator(std::vector<int> &queue) {
         checkCurrentLevel();
 
+        for(auto &i: queue){
+            std::cout << i << " ";
+        }
+        std::cout << '\n';
+
         for (auto &i: m_elevatorPassengersList) {
             if (!i.isSitting()) {
                 takeSeat(i);
@@ -482,28 +487,31 @@ public:
                 queue.erase(queue.begin());
             }
         } else {
-            if (fiveSecondTimer(FPS, timerInterruptFlag)) {  // change hard coded value
+            if (fiveSecondTimer(FPS, timerInterruptFlag)) {  // if passenger is sitting on the opposite side of the elevator, timer starts instantly counting
                 queue.push_back(0);
             }
         }
     }
 
     Passenger sendPassengerToFloor(std::vector<passengerRoute> &queue) {
-        if (!m_elevatorPassengersList.empty()) {
+        // if (!m_elevatorPassengersList.empty()) {
             Passenger passenger(m_elevatorPassengersList.back().getSprite().getTexture(), m_elevatorPassengersList.back().getStartLevel(),
                                 m_elevatorPassengersList.back().getEndLevel(),
                                 m_elevatorPassengersList.back().getOrderNumber());
             passenger.setPos(m_elevatorPassengersList.back().getSprite().getPosition());
+
             m_elevatorPassengersList.pop_back();
+
             m_totalPassengerMass -= passenger.getMass();
             m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
-            queue.erase(queue.begin());         //TODO sprawdzic
+            
+            queue.erase(queue.begin());
 
             return passenger;
-        }
+        // }
     }
 
-    void acceptPassenger(const Passenger &passenger) {
+    void acceptPassengerToElevator(const Passenger &passenger) {
         m_elevatorPassengersList.push_back(passenger);
         m_totalPassengerMass += passenger.getMass();
         m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
@@ -512,7 +520,7 @@ public:
     void deliverPassenger(std::vector<Floor> &floors, std::vector<passengerRoute> &queue) {
         for (Passenger &i: m_elevatorPassengersList) {
             if (i.getEndLevel() == m_currentLevel) {
-                floors[m_currentLevel].acceptPassenger(sendPassengerToFloor(queue));
+                floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue));
                 Seats[i.getSeat()].taken = false;
                 i.setSitting(notSitting);
             }
@@ -541,44 +549,43 @@ public:
 
         if (!passengerQueue.empty()) {
             for (auto &i: passengerQueue) {
-//                std::cout << std::boolalpha << '\n' << m_direction << " | " << m_currentLevel << " | " << i.startLevel << " | "
-//                          << i.endLevel << " | "
-//                          << (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) << '\n';
-                if (m_elevatorPassengersList.size() == 8)
+            //    std::cout << std::boolalpha << '\n' << m_direction << " | " << m_currentLevel << " | " << i.startLevel << " | "
+            //              << i.endLevel << " | "
+            //              << (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) << '\n';
                     if (m_direction == up) {
-                        if (i.startLevel >= m_currentLevel) {
+                        if (i.startLevel > m_currentLevel) {
                             if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
                                 elevatorQueue.push_back(i.startLevel);
                             }
                         }
-                        if (i.endLevel >= m_currentLevel) {
+                        if (i.endLevel > m_currentLevel) {
                             if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
                                 elevatorQueue.push_back(i.endLevel);
                             }
                         }
-                        if ((i.startLevel || i.endLevel) < m_currentLevel) {
+                        if (elevatorQueue.empty()) {
                             m_direction = down;
                         }
                         std::sort(elevatorQueue.begin(), elevatorQueue.end());
                     }
-                if (m_direction == down) {
-                    if (i.endLevel <= m_currentLevel) {
-                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
-                            elevatorQueue.push_back(i.endLevel);
+                    if (m_direction == down) {
+                        if (i.endLevel < m_currentLevel) {
+                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
+                                elevatorQueue.push_back(i.endLevel);
+                            }
                         }
-                    }
-                    if (i.startLevel <= m_currentLevel) {
-                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
-                            elevatorQueue.push_back(i.startLevel);
+                        if (i.startLevel < m_currentLevel) {
+                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                                elevatorQueue.push_back(i.startLevel);
+                            }
                         }
+                        if (elevatorQueue.empty()) {
+                            m_direction = down;
+                        }
+                        std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
+                            return a > b;
+                        });
                     }
-                    if ((i.startLevel || i.endLevel) > m_currentLevel) {
-                        m_direction = up;
-                    }
-                    std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
-                        return a > b;
-                    });
-                }
             }
 
 //            if (passengerQueue.empty()) {
@@ -651,7 +658,7 @@ int main() {
             floors[i].returnPassengers(sharedPassengerQueue);
 
             if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
-                elevator.acceptPassenger(floors[i].sendPassengerToElevator());
+                elevator.acceptPassengerToElevator(floors[i].sendPassengerToElevator());
             }
 
             floors[i].getRidOfPassenger(elevator.returnElevatorFreeze());
