@@ -43,7 +43,15 @@ struct Seat {
 struct passengerRoute {
     int startLevel{};
     int endLevel{};
+
+    friend bool operator== (const passengerRoute& r1, const passengerRoute& r2);
 };
+
+bool operator== (const passengerRoute& r1, const passengerRoute& r2)
+{
+    return (r1.startLevel == r2.startLevel &&
+            r1.endLevel == r2.endLevel);
+}
 
 class Button {
 private:
@@ -147,6 +155,10 @@ public:
     }
 
     bool isSitting() const { return sitting; }
+
+    void setInicator(){
+        m_sprite.setColor(sf::Color::Blue);
+    }
 
     void setSitting(int x) {
         if (x == notSitting) {
@@ -255,9 +267,6 @@ public:
     }
 
     Passenger sendPassengerToElevator() {
-        if (m_queue.empty()) {
-            std::cout << "Error A";
-        }
         Passenger passenger(m_queue.back().getSprite().getTexture(), m_queue.back().getStartLevel(), m_queue.back().getEndLevel(),
             m_queue.back().getOrderNumber());
         passenger.setPos(m_queue.back().getSprite().getPosition());
@@ -482,8 +491,8 @@ public:
     void runElevator(std::vector<int>& queue) {
         checkCurrentLevel();
 
-        // for(auto &i: queue){
-        //     std::cout << i << " ";
+        // for(auto &i : Seats){
+        //     std::cout << std::boolalpha << i.position << " ";
         // }
         // std::cout << '\n';
 
@@ -509,18 +518,20 @@ public:
         }
     }
 
-    Passenger sendPassengerToFloor(std::vector<passengerRoute> &queue) {
-        Passenger passenger(m_elevatorPassengersList.back().getSprite().getTexture(), m_elevatorPassengersList.back().getStartLevel(),
-                            m_elevatorPassengersList.back().getEndLevel(),
-                            m_elevatorPassengersList.back().getOrderNumber());
-        passenger.setPos(m_elevatorPassengersList.back().getSprite().getPosition());
+    Passenger sendPassengerToFloor(std::vector<passengerRoute> &queue, int passengerSpot) {
+        Passenger passenger(m_elevatorPassengersList.at(passengerSpot).getSprite().getTexture(), m_elevatorPassengersList.at(passengerSpot).getStartLevel(),
+                            m_elevatorPassengersList.at(passengerSpot).getEndLevel(),
+                            m_elevatorPassengersList.at(passengerSpot).getOrderNumber());
+        passenger.setPos(m_elevatorPassengersList.at(passengerSpot).getSprite().getPosition());
 
-        m_elevatorPassengersList.pop_back();
+        m_elevatorPassengersList.erase(m_elevatorPassengersList.begin() + passengerSpot);
 
-        m_totalPassengerMass -= passenger.getMass();
+        m_totalPassengerMass -= /*passenger.getMass()*/ 70;                                     // naprawić
         m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
-            
-        queue.erase(queue.begin());
+
+        if(std::find(queue.begin(), queue.end(), passenger.getRoute()) != queue.end()){
+            queue.erase(std::find(queue.begin(), queue.end(), passenger.getRoute()));
+        }
 
         return passenger;
     }
@@ -532,12 +543,16 @@ public:
     }
 
     void deliverPassenger(std::vector<Floor>& floors, std::vector<passengerRoute>& queue) {
+        int counter{};
         for (Passenger& i : m_elevatorPassengersList) {
             if (i.getEndLevel() == m_currentLevel) {
-                floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue)); // wysłać konkretnego pasażera nie back()
+                std::cout << "A" << i.getSeat();
+                floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue, counter));
                 Seats[i.getSeat()].taken = false;
                 i.setSitting(notSitting);
+                std::cout << "D";
             }
+            counter++;
         }
     }
 
@@ -664,9 +679,7 @@ int main() {
             floors[i].returnPassengers(sharedPassengerQueue);
 
             if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
-                // for(int j = 0; j < floors[i].getFloorSize(); j++){
-                    elevator.acceptPassengerToElevator(floors[i].sendPassengerToElevator());
-                // }
+                elevator.acceptPassengerToElevator(floors[i].sendPassengerToElevator());
             }
 
             floors[i].getRidOfPassenger(elevator.returnElevatorFreeze());
@@ -678,15 +691,15 @@ int main() {
 
         // -----------------------------------------
 
-        for (auto& i : queueForElevator) {
-            std::cout << i << ' ';
-        }
-        std::cout << '\n';
-        for (auto& j : sharedPassengerQueue) {
-            std::cout << '(' << j.startLevel << " | " << j.endLevel << ") ";
-        }
-        std::cout << '\n';
-        std::cout << "--------------" << '\n';
+        // for (auto& i : queueForElevator) {
+        //     std::cout << i << ' ';
+        // }
+        // std::cout << '\n';
+        // for (auto& j : sharedPassengerQueue) {
+        //     std::cout << '(' << j.startLevel << " | " << j.endLevel << ") ";
+        // }
+        // std::cout << '\n';
+        // std::cout << "--------------" << '\n';
 
         // -----------------------------------------
 
