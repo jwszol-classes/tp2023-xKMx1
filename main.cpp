@@ -491,11 +491,6 @@ public:
     void runElevator(std::vector<int>& queue) {
         checkCurrentLevel();
 
-        // for(auto &i : Seats){
-        //     std::cout << std::boolalpha << i.position << " ";
-        // }
-        // std::cout << '\n';
-
         for (auto& i : m_elevatorPassengersList) {
             if (!i.isSitting()) {
                 takeSeat(i);
@@ -526,7 +521,7 @@ public:
 
         m_elevatorPassengersList.erase(m_elevatorPassengersList.begin() + passengerSpot);
 
-        m_totalPassengerMass -= /*passenger.getMass()*/ 70;                                     // naprawić
+        m_totalPassengerMass -= passenger.getMass();
         m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
 
         if(std::find(queue.begin(), queue.end(), passenger.getRoute()) != queue.end()){
@@ -546,11 +541,9 @@ public:
         int counter{};
         for (Passenger& i : m_elevatorPassengersList) {
             if (i.getEndLevel() == m_currentLevel) {
-                std::cout << "A" << i.getSeat();
                 floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue, counter));
                 Seats[i.getSeat()].taken = false;
                 i.setSitting(notSitting);
-                std::cout << "D";
             }
             counter++;
         }

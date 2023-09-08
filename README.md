@@ -22,7 +22,6 @@ Mieliśmy za zadanie stworzyć symulator windy, zachowującej się jak relistycz
 - klasa Button - reprezentuje napisany przez nas przycisk
 
 ***Błędy w programie***
-- Aplikacja napotka nieoczekiwane błędy i zakończa działanie przez wycieki pamięci. Po licznych próbach naprawy, które poprawiły działanie aplikacji, w dalszym ciągu aplikacja niespodzeiwanie przestaje działać.
 - Okazjonalnie pasażerowie opuszczają windę nie zatrzymując jej, przez co latają w powietrzu.
 - Z powodu implementacji funkcji rozpoznawającej obecne piętro windy, pasażerowie mogą wsiąść do niej niezależnie czy winda stoii czy się rusza.
 
