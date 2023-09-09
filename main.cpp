@@ -342,6 +342,8 @@ public:
         }
     }
 
+    int getFloorYPos() const {return m_shape.getPosition().y;}
+
     int getFloorSize() const { return m_queue.size(); }
 
     int getFloorValue() const { return m_id; }
@@ -451,9 +453,10 @@ public:
     void takeSeat(Passenger& passenger) {
         bool sittingFlag = false;
         for (int j = 0; j < 8; j++) {               //for every seat in elevator
-            if (((passenger.getPosition().x > Seats[j].position - 2) && (passenger.getPosition().x < Seats[j].position + 2)) && !Seats[j].taken) {
+            if (((passenger.getPosition().x == Seats[j].position)  && !Seats[j].taken)) {
                 Seats[j].taken = true;
                 passenger.setSitting(j);
+                std::cout << "T " << j << ' ' << passenger.getEndLevel() << '\n';
                 sittingFlag = false;
                 break;
             }
@@ -473,6 +476,7 @@ public:
         else {
             m_isElevatorFrozen = false;
         }
+
     }
 
     bool fiveSecondTimer(int appFPS, bool resetFlag) {
@@ -490,6 +494,11 @@ public:
 
     void runElevator(std::vector<int>& queue) {
         checkCurrentLevel();
+
+        // for(auto &i : Seats){
+        //     std::cout << std::boolalpha << i.taken << ' ';
+        // }
+        // std::cout << '\n';
 
         for (auto& i : m_elevatorPassengersList) {
             if (!i.isSitting()) {
@@ -539,13 +548,13 @@ public:
 
     void deliverPassenger(std::vector<Floor>& floors, std::vector<passengerRoute>& queue) {
         int counter{};
-        for (Passenger& i : m_elevatorPassengersList) {
-            if (i.getEndLevel() == m_currentLevel) {
-                floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue, counter));
-                Seats[i.getSeat()].taken = false;
-                i.setSitting(notSitting);
+        for(int j = 0; j < m_elevatorPassengersList.size(); j++) {     
+            if (m_elevatorPassengersList[j].getEndLevel() == m_currentLevel) {
+                Seats[m_elevatorPassengersList[j].getSeat()].taken = false;
+                m_elevatorPassengersList[j].setSitting(notSitting);
+                floors[m_currentLevel].acceptPassengerToFloor(sendPassengerToFloor(queue, j));
+                j--;
             }
-            counter++;
         }
     }
 
@@ -612,6 +621,8 @@ public:
 
     }
 
+    int getElevatorYPos() const { return (m_rectangle.getGlobalBounds().getPosition().y + (sizeOfElevator.y) + 5);}
+
     sf::RectangleShape get_line() const { return m_line; }
 
     sf::RectangleShape get_line2() const { return m_line2; }
@@ -665,13 +676,17 @@ int main() {
 
         elevator.checkCurrentLevel();
 
+        elevator.elevatorLogic(queueForElevator, sharedPassengerQueue);
+        elevator.runElevator(queueForElevator);
+
         for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
 
             elevator.deliverPassenger(floors, sharedPassengerQueue);
             floors[i].returnPassengers(sharedPassengerQueue);
+            std::cout << i << ' ' << elevator.getElevatorYPos() << ' ' << floors[i].getFloorYPos() << '\n';
 
-            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
+            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && elevator.getElevatorYPos() == floors[i].getFloorYPos() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
                 elevator.acceptPassengerToElevator(floors[i].sendPassengerToElevator());
             }
 
@@ -679,8 +694,6 @@ int main() {
         }
         buttonSwitch = false;
 
-        elevator.elevatorLogic(queueForElevator, sharedPassengerQueue);
-        elevator.runElevator(queueForElevator);
 
         // -----------------------------------------
 
