@@ -50,7 +50,7 @@ struct passengerRoute {
 bool operator== (const passengerRoute& r1, const passengerRoute& r2)
 {
     return (r1.startLevel == r2.startLevel &&
-            r1.endLevel == r2.endLevel);
+        r1.endLevel == r2.endLevel);
 }
 
 class Button {
@@ -156,7 +156,7 @@ public:
 
     bool isSitting() const { return sitting; }
 
-    void setInicator(){
+    void setInicator() {
         m_sprite.setColor(sf::Color::Blue);
     }
 
@@ -275,7 +275,7 @@ public:
         return passenger;
     }
 
-    void acceptPassengerToFloor(const Passenger &passenger) {
+    void acceptPassengerToFloor(const Passenger& passenger) {
         m_deleteQueue.push_back(passenger);
     }
 
@@ -457,6 +457,7 @@ public:
                 Seats[j].taken = true;
                 passenger.setSitting(j);
                 std::cout << "T " << j << ' ' << passenger.getEndLevel() << '\n';
+                std::cout << "T " << j << ' ' << passenger.getEndLevel() << '\n';
                 sittingFlag = false;
                 break;
             }
@@ -515,17 +516,18 @@ public:
             else {
                 queue.erase(queue.begin());
             }
-        } else {
+        }
+        else {
             if (fiveSecondTimer(FPS, timerInterruptFlag)) {  // if passenger is sitting on the opposite side of the elevator, timer starts instantly counting
                 queue.push_back(0);
             }
         }
     }
 
-    Passenger sendPassengerToFloor(std::vector<passengerRoute> &queue, int passengerSpot) {
+    Passenger sendPassengerToFloor(std::vector<passengerRoute>& queue, int passengerSpot) {
         Passenger passenger(m_elevatorPassengersList.at(passengerSpot).getSprite().getTexture(), m_elevatorPassengersList.at(passengerSpot).getStartLevel(),
-                            m_elevatorPassengersList.at(passengerSpot).getEndLevel(),
-                            m_elevatorPassengersList.at(passengerSpot).getOrderNumber());
+            m_elevatorPassengersList.at(passengerSpot).getEndLevel(),
+            m_elevatorPassengersList.at(passengerSpot).getOrderNumber());
         passenger.setPos(m_elevatorPassengersList.at(passengerSpot).getSprite().getPosition());
 
         m_elevatorPassengersList.erase(m_elevatorPassengersList.begin() + passengerSpot);
@@ -533,14 +535,14 @@ public:
         m_totalPassengerMass -= passenger.getMass();
         m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
 
-        if(std::find(queue.begin(), queue.end(), passenger.getRoute()) != queue.end()){
+        if (std::find(queue.begin(), queue.end(), passenger.getRoute()) != queue.end()) {
             queue.erase(std::find(queue.begin(), queue.end(), passenger.getRoute()));
         }
 
         return passenger;
     }
 
-    void acceptPassengerToElevator(const Passenger &passenger) {
+    void acceptPassengerToElevator(const Passenger& passenger) {
         m_elevatorPassengersList.push_back(passenger);
         m_totalPassengerMass += passenger.getMass();
         m_currentMassOutput.setString("Masa: " + std::to_string(m_totalPassengerMass));
@@ -579,41 +581,41 @@ public:
         int count = 0;
 
         if (!passengerQueue.empty()) {
-            for (auto &i: passengerQueue) {
-                    if (m_direction == up) {
-                        if (i.startLevel > m_currentLevel) {
-                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
-                                elevatorQueue.push_back(i.startLevel);
-                            }
+            for (auto& i : passengerQueue) {
+                if (m_direction == up) {
+                    if (i.startLevel > m_currentLevel) {
+                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                            elevatorQueue.push_back(i.startLevel);
                         }
-                        if (i.endLevel > m_currentLevel) {
-                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
-                                elevatorQueue.push_back(i.endLevel);
-                            }
-                        }
-                        if (elevatorQueue.empty()) {
-                            m_direction = down;
-                        }
-                        std::sort(elevatorQueue.begin(), elevatorQueue.end());
                     }
-                    if (m_direction == down) {
-                        if (i.endLevel < m_currentLevel) {
-                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
-                                elevatorQueue.push_back(i.endLevel);
-                            }
+                    if (i.endLevel > m_currentLevel) {
+                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
+                            elevatorQueue.push_back(i.endLevel);
                         }
-                        if (i.startLevel < m_currentLevel) {
-                            if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
-                                elevatorQueue.push_back(i.startLevel);
-                            }
+                    }
+                    if (elevatorQueue.empty()) {
+                        m_direction = down;
+                    }
+                    std::sort(elevatorQueue.begin(), elevatorQueue.end());
+                }
+                if (m_direction == down) {
+                    if (i.endLevel < m_currentLevel) {
+                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.endLevel) == elevatorQueue.end()) {
+                            elevatorQueue.push_back(i.endLevel);
                         }
-                        if (elevatorQueue.empty()) {
-                            m_direction = up;
+                    }
+                    if (i.startLevel < m_currentLevel) {
+                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                            elevatorQueue.push_back(i.startLevel);
                         }
-                        std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
-                            return a > b;
+                    }
+                    if (elevatorQueue.empty()) {
+                        m_direction = up;
+                    }
+                    std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
+                        return a > b;
                         });
-                    }
+                }
             }
 
             count++;
