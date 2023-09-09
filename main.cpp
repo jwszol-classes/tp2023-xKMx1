@@ -566,7 +566,7 @@ public:
             for (auto& i : passengerQueue) {
                 //    std::cout << std::boolalpha << '\n' << m_direction << " | " << m_currentLevel << " | " << i.startLevel << " | "
                 //              << i.endLevel << " | "
-                //              << (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) << '\n';
+                //              << (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) << '\n';make
                 if (m_direction == up) {
                     if (i.startLevel > m_currentLevel) {
                         if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
@@ -590,12 +590,12 @@ public:
                         }
                     }
                     if (i.startLevel < m_currentLevel) {
-                        if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
+                    if (std::find(elevatorQueue.begin(), elevatorQueue.end(), i.startLevel) == elevatorQueue.end()) {
                             elevatorQueue.push_back(i.startLevel);
                         }
                     }
                     if (elevatorQueue.empty()) {
-                        m_direction = down;
+                        m_direction = up;
                     }
                     std::sort(elevatorQueue.begin(), elevatorQueue.end(), [](int a, int b) {
                         return a > b;
