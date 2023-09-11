@@ -21,9 +21,4 @@ Mieliśmy za zadanie stworzyć symulator windy, zachowującej się jak relistycz
 - klasa Passenger - reprezentuje pojedynczego pasażera, zawiera jego pozycję oraz trasę
 - klasa Button - reprezentuje napisany przez nas przycisk
 
-***Błędy w programie***
-- Okazjonalnie pasażerowie opuszczają windę nie zatrzymując jej, przez co latają w powietrzu.
-- Z powodu implementacji funkcji rozpoznawającej obecne piętro windy, pasażerowie mogą wsiąść do niej niezależnie czy winda stoii czy się rusza.
-
-
 ![screen shot](image.png)

@@ -279,10 +279,9 @@ public:
         m_deleteQueue.push_back(passenger);
     }
 
-    void getRidOfPassenger(bool& freeze) {
+    void getRidOfPassenger(bool& freezeFlag) {
         int count = 0;
         for (Passenger& i : m_deleteQueue) {
-
             if (i.getEndLevel() % 2 == 0) {
                 i.move(left);
             }
@@ -292,23 +291,12 @@ public:
 
             if (i.getPosition().x > screenWidth || i.getPosition().x < -70) {
                 if (!m_deleteQueue.empty()) {
-                    //                    m_deleteQueue.pop_back();
                     m_deleteQueue.erase(m_deleteQueue.begin() + count);
                 }
             }
-
-            bool freezeFlag = false;
-
             if (i.getPosition().x >= (screenWidth / 2 - (sizeOfElevator.x / 2) - 40) && // left side of the elevator minus passenger width
                 i.getPosition().x <= (screenWidth / 2 + (sizeOfElevator.x / 2))) {      // right side of the elevator
                 freezeFlag = true;
-            }
-
-            if (freezeFlag) {
-                freeze = true;
-            }
-            else {
-                freeze = false;
             }
 
             count++;
@@ -456,8 +444,6 @@ public:
             if (((passenger.getPosition().x == Seats[j].position)  && !Seats[j].taken)) {
                 Seats[j].taken = true;
                 passenger.setSitting(j);
-                std::cout << "T " << j << ' ' << passenger.getEndLevel() << '\n';
-                std::cout << "T " << j << ' ' << passenger.getEndLevel() << '\n';
                 sittingFlag = false;
                 break;
             }
@@ -495,11 +481,6 @@ public:
 
     void runElevator(std::vector<int>& queue) {
         checkCurrentLevel();
-
-        // for(auto &i : Seats){
-        //     std::cout << std::boolalpha << i.taken << ' ';
-        // }
-        // std::cout << '\n';
 
         for (auto& i : m_elevatorPassengersList) {
             if (!i.isSitting()) {
@@ -623,6 +604,15 @@ public:
 
     }
 
+    void setElevatorFreeze(bool flag){
+        if(flag){
+            m_isElevatorFrozen = true;
+        }
+        else{
+            m_isElevatorFrozen = false;
+        }
+    }
+
     int getElevatorYPos() const { return (m_rectangle.getGlobalBounds().getPosition().y + (sizeOfElevator.y) + 5);}
 
     sf::RectangleShape get_line() const { return m_line; }
@@ -681,19 +671,21 @@ int main() {
         elevator.elevatorLogic(queueForElevator, sharedPassengerQueue);
         elevator.runElevator(queueForElevator);
 
+        bool freezeFlag = false;
         for (int i = 0; i < 5; i++) {                  //for every floor
             floors[i].listenForButtons(buttonSwitch, sf::Mouse::getPosition(window), &texture);
 
             elevator.deliverPassenger(floors, sharedPassengerQueue);
             floors[i].returnPassengers(sharedPassengerQueue);
-            std::cout << i << ' ' << elevator.getElevatorYPos() << ' ' << floors[i].getFloorYPos() << '\n';
 
-            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && elevator.getElevatorYPos() == floors[i].getFloorYPos() && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
+            if (elevator.getCurrentLevel() == floors[i].getFloorValue() && elevator.getElevatorYPos() <= floors[i].getFloorYPos() + 2 && elevator.getElevatorYPos() >= floors[i].getFloorYPos() - 2 && !floors[i].isFloorEmpty() && !elevator.isElevatorFull()) {
                 elevator.acceptPassengerToElevator(floors[i].sendPassengerToElevator());
             }
 
-            floors[i].getRidOfPassenger(elevator.returnElevatorFreeze());
+            floors[i].getRidOfPassenger(freezeFlag);
         }
+        elevator.setElevatorFreeze(freezeFlag);
+
         buttonSwitch = false;
 
 
