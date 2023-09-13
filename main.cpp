@@ -1,13 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
-#include <windows.h>
+
 
 const int screenWidth = 1280;
 const int screenHeight = 720;
 
-const sf::Vector2i zeroFloorCoordinates{
-        sf::Vector2i(screenWidth / 2, screenHeight - 70) }; // coordinates relative to the middle of 300x170 elevator
+const sf::Vector2i zeroFloorCoordinates{sf::Vector2i(screenWidth / 2, screenHeight - 70) }; // coordinates relative to the middle of 300x170 elevator
 const sf::Vector2i firstFloorCoordinates{ sf::Vector2i(screenWidth / 2, screenHeight - (3 * 70)) };
 const sf::Vector2i secondFloorCoordinates{ sf::Vector2i(screenWidth / 2, screenHeight - (5 * 70)) };
 const sf::Vector2i thirdFloorCoordinates{ sf::Vector2i(screenWidth / 2, screenHeight - (7 * 70)) };
@@ -24,19 +23,19 @@ enum Direction {
 };
 
 enum SittingSpot {
-    firstSeat = 0,
-    secondSeat = 1,
-    thirdSeat = 2,
-    fourthSeat = 3,
-    fifthSeat = 4,
-    sixthSeat = 5,
-    seventhSeat = 6,
-    eightSeat = 7,
-    notSitting = 8,
+    firstSeat,
+    secondSeat,
+    thirdSeat,
+    fourthSeat,
+    fifthSeat,
+    sixthSeat,
+    seventhSeat,
+    eightSeat,
+    notSitting,
 };
 
 struct Seat {
-    float position{};
+    float positionX{};
     bool taken = false;
 };
 
@@ -44,7 +43,6 @@ struct passengerRoute {
     int startLevel{};
     int endLevel{};
 
-    friend bool operator== (const passengerRoute& r1, const passengerRoute& r2);
 };
 
 bool operator== (const passengerRoute& r1, const passengerRoute& r2)
@@ -109,7 +107,7 @@ private:
     int m_mass = 70;
     sf::Vector2f m_position{};
     sf::Sprite m_sprite{};
-    bool sitting = false;
+    bool m_sitting = false;
     SittingSpot m_seat = notSitting;
 
 public:
@@ -117,7 +115,7 @@ public:
         m_route.startLevel = startLevel;
         m_route.endLevel = endLevel;
 
-        m_orderNumber = orderNumber;
+        m_orderNumber = orderNumber; //his number of queue on the floor
 
         m_sprite.setTexture(*texture);
         m_sprite.setScale(0.25f, 0.25f);
@@ -154,23 +152,15 @@ public:
         }
     }
 
-    bool isSitting() const { return sitting; }
-
-    void setInicator() {
-        m_sprite.setColor(sf::Color::Blue);
-    }
-
     void setSitting(int x) {
         if (x == notSitting) {
-            sitting = false;
+            m_sitting = false;
         }
         else {
-            sitting = true;
+            m_sitting = true;
         }
         m_seat = static_cast<SittingSpot>(x);
     }
-
-    int getSeat() const { return m_seat; }
 
     void setPos(sf::Vector2f pos) {
         m_position = pos;
@@ -205,14 +195,18 @@ public:
 
     int getOrderNumber() const { return m_orderNumber; }
 
+    int getSeat() const { return m_seat; }
+
     int getMass() const { return m_mass; }
+
+    bool isSitting() const { return m_sitting; }
 
     sf::Vector2f getPosition() const { return m_position; }
 };
 
 class Floor {
 private:
-    std::vector<Passenger> m_queue{};
+    std::vector<Passenger> m_waitingQueue{};
     std::vector<Passenger> m_deleteQueue{};
     std::vector<Button> m_otherFloorsButtons{};
     sf::RectangleShape m_shape{};
@@ -223,7 +217,7 @@ public:
         m_id = id;
 
         for (int i = 0; i < 5; i++) {
-            if (m_id == i) {
+            if (i == m_id) {
                 continue;
             }
             Button button((100 + (m_id % 2) * 900 + i * 40), screenHeight - m_id * 140 - 100, 30, 30, font, i);
@@ -260,18 +254,18 @@ public:
     void listenForButtons(bool event, sf::Vector2i mousePos, const sf::Texture* texture) {
         for (int i = 0; i < 4; i++) {
             if (m_otherFloorsButtons[i].clicked(event, mousePos)) {
-                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_queue.size()));
-                m_queue.push_back(newPassenger);
+                Passenger newPassenger(texture, m_id, m_otherFloorsButtons[i].getValue(), static_cast<int>(m_waitingQueue.size()));
+                m_waitingQueue.push_back(newPassenger);
             }
         }
     }
 
     Passenger sendPassengerToElevator() {
-        Passenger passenger(m_queue.back().getSprite().getTexture(), m_queue.back().getStartLevel(), m_queue.back().getEndLevel(),
-            m_queue.back().getOrderNumber());
-        passenger.setPos(m_queue.back().getSprite().getPosition());
+        Passenger passenger(m_waitingQueue.back().getSprite().getTexture(), m_waitingQueue.back().getStartLevel(), m_waitingQueue.back().getEndLevel(),
+            m_waitingQueue.back().getOrderNumber());
+        passenger.setPos(m_waitingQueue.back().getSprite().getPosition());
 
-        m_queue.pop_back();
+        m_waitingQueue.pop_back();
         return passenger;
     }
 
@@ -282,7 +276,7 @@ public:
     void getRidOfPassenger(bool& freezeFlag) {
         int count = 0;
         for (Passenger& i : m_deleteQueue) {
-            if (i.getEndLevel() % 2 == 0) {
+            if (m_id % 2 == 0) {
                 i.move(left);
             }
             else {
@@ -308,7 +302,7 @@ public:
         for (int i = 0; i < 4; i++) {
             m_otherFloorsButtons[i].render(target);
         }
-        for (const auto& i : m_queue) {
+        for (const auto& i : m_waitingQueue) {
             target->draw(i.getSprite());
         }
         for (const auto& i : m_deleteQueue) {
@@ -317,10 +311,10 @@ public:
     }
 
     void returnPassengers(std::vector<passengerRoute>& gameQueue) {
-        for (auto& i : m_queue) {
+        for (auto& i : m_waitingQueue) {
             bool pushFlag = true;
             for (auto& j : gameQueue) {
-                if (j.startLevel == i.getStartLevel() && j.endLevel == i.getEndLevel()) {
+                if (i.getRoute() == j) {
                     pushFlag = false;
                 }
             }
@@ -330,18 +324,18 @@ public:
         }
     }
 
-    int getFloorYPos() const {return m_shape.getPosition().y;}
+    int getFloorYPos() const { return m_shape.getPosition().y; }
 
-    int getFloorSize() const { return m_queue.size(); }
+    int getFloorSize() const { return m_waitingQueue.size(); }
 
     int getFloorValue() const { return m_id; }
 
+
     bool isFloorEmpty() const {
-        if (m_queue.empty()) return true;
+        if (m_waitingQueue.empty()) return true;
         else return false;
     }
 };
-
 class Elevator {
 private:
     int m_totalPassengerMass = 0;
@@ -426,7 +420,7 @@ public:
             increment = 0.f;
     }
 
-    void moveElevator(int floor) {                 //TODO cos sie nie popuje po dotarciu na pietro
+    void moveElevator(int floor) {
         float increment;
         determineDirection(increment, floor);
 
@@ -441,7 +435,7 @@ public:
     void takeSeat(Passenger& passenger) {
         bool sittingFlag = false;
         for (int j = 0; j < 8; j++) {               //for every seat in elevator
-            if (((passenger.getPosition().x == Seats[j].position)  && !Seats[j].taken)) {
+            if (((passenger.getPosition().x == Seats[j].positionX) && !Seats[j].taken)) {
                 Seats[j].taken = true;
                 passenger.setSitting(j);
                 sittingFlag = false;
@@ -530,8 +524,8 @@ public:
     }
 
     void deliverPassenger(std::vector<Floor>& floors, std::vector<passengerRoute>& queue) {
-        int counter{};
-        for(int j = 0; j < m_elevatorPassengersList.size(); j++) {     
+       
+        for (int j = 0; j < m_elevatorPassengersList.size(); j++) {
             if (m_elevatorPassengersList[j].getEndLevel() == m_currentLevel) {
                 Seats[m_elevatorPassengersList[j].getSeat()].taken = false;
                 m_elevatorPassengersList[j].setSitting(notSitting);
@@ -604,16 +598,16 @@ public:
 
     }
 
-    void setElevatorFreeze(bool flag){
-        if(flag){
+    void setElevatorFreeze(bool flag) {
+        if (flag) {
             m_isElevatorFrozen = true;
         }
-        else{
+        else {
             m_isElevatorFrozen = false;
         }
     }
 
-    int getElevatorYPos() const { return (m_rectangle.getGlobalBounds().getPosition().y + (sizeOfElevator.y) + 5);}
+    int getElevatorYPos() const { return (m_rectangle.getGlobalBounds().getPosition().y + (sizeOfElevator.y) + 5); }
 
     sf::RectangleShape get_line() const { return m_line; }
 
@@ -687,21 +681,6 @@ int main() {
         elevator.setElevatorFreeze(freezeFlag);
 
         buttonSwitch = false;
-
-
-        // -----------------------------------------
-
-        // for (auto& i : queueForElevator) {
-        //     std::cout << i << ' ';
-        // }
-        // std::cout << '\n';
-        // for (auto& j : sharedPassengerQueue) {
-        //     std::cout << '(' << j.startLevel << " | " << j.endLevel << ") ";
-        // }
-        // std::cout << '\n';
-        // std::cout << "--------------" << '\n';
-
-        // -----------------------------------------
 
         window.clear(sf::Color(255, 255, 255));
         elevator.render(&window);
